@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -21,22 +20,49 @@ import (
 )
 
 var (
-	maogaiQuestionsByChapter    map[string][]Question   // 毛概题目
-	xigaiLiQuestionsByChapter   map[string][]Question   // 习概（李老师）题目
-	xigaiYangQuestionsByChapter map[string][]Question   // 习概（杨老师）题目
-	questionMapByID             map[string]Question     // 通过唯一ID (课程_章节_索引) 快速查找原始题目
-	userSessions                map[string]*UserSession // 内存中的用户会话
-	sessionsMu                  sync.RWMutex            // 保护 userSessions 映射
+	maogaiQuestionsByChapter    map[string][]Question // 毛概题目
+	xigaiLiQuestionsByChapter   map[string][]Question // 习概（李老师）题目
+	xigaiYangQuestionsByChapter map[string][]Question // 习概（杨老师）题目
+	coursesByKey                map[string]*CourseConfig
+	coursesMu                   sync.RWMutex
+	questionMapByID             map[string]Question // 通过唯一ID (课程_章节_索引) 快速查找原始题目
+	rng                         = rand.New(rand.NewSource(time.Now().UnixNano()))
+	rngMu                       sync.Mutex
 )
 
 // init 在程序启动时执行初始化操作
 func init() {
-	rand.Seed(time.Now().UnixNano()) // 初始化随机数生成器
 	maogaiQuestionsByChapter = make(map[string][]Question)
 	xigaiLiQuestionsByChapter = make(map[string][]Question)
 	xigaiYangQuestionsByChapter = make(map[string][]Question)
+	coursesByKey = map[string]*CourseConfig{
+		"maogai": {
+			Key:           "maogai",
+			Name:          "2025上毛概康老师",
+			SourceDir:     maogaiQuestionSourceDir,
+			MaxChapter:    maogaiMaxChapterIndex,
+			Questions:     maogaiQuestionsByChapter,
+			IncorrectFile: maogaiIncorrectQuestionsFile,
+		},
+		"xigai_li": {
+			Key:           "xigai_li",
+			Name:          "2024下习概李老师",
+			SourceDir:     xigaiLiQuestionSourceDir,
+			MaxChapter:    xigaiLiMaxChapterIndex,
+			Questions:     xigaiLiQuestionsByChapter,
+			IncorrectFile: xigaiLiIncorrectQuestionsFile,
+		},
+		"xigai_yang": {
+			Key:           "xigai_yang",
+			Name:          "2025下习概杨老师",
+			SourceDir:     xigaiYangQuestionSourceDir,
+			MaxChapter:    xigaiYangMaxChapterIndex,
+			Questions:     xigaiYangQuestionsByChapter,
+			IncorrectFile: xigaiYangIncorrectQuestionsFile,
+		},
+	}
 	questionMapByID = make(map[string]Question)
-	userSessions = make(map[string]*UserSession)
+	initSessions()
 
 	// 确保用户数据根目录存在
 	if err := os.MkdirAll(userDataBaseDir, os.ModePerm); err != nil {
@@ -49,28 +75,15 @@ func init() {
 func loadAllQuestionsGlobal() {
 	log.Println("喵~ 正在努力加载全局题库中...")
 
-	// 加载毛概题库
-	log.Println("加载毛概题库...")
-	for i := 0; i <= maogaiMaxChapterIndex; i++ {
-		chapterKey := strconv.Itoa(i)
-		// 嵌入文件系统使用正斜杠，不使用filepath.Join
-		filePath := maogaiQuestionSourceDir + "/" + chapterKey + ".json"
-		loadChapterQuestions(filePath, chapterKey, "maogai", maogaiQuestionsByChapter)
-	}
-
-	// 加载习概题库
-	log.Println("加载习概题库...")
-	// 李老师的习概题库（通常只有一个章节）
-	for i := 0; i <= xigaiLiMaxChapterIndex; i++ {
-		chapterKey := strconv.Itoa(i)
-		filePath := xigaiLiQuestionSourceDir + "/" + chapterKey + ".json"
-		loadChapterQuestions(filePath, chapterKey, "xigai_li", xigaiLiQuestionsByChapter)
-	}
-	// 杨老师的习概题库（导论 + 多章节）
-	for i := 0; i <= xigaiYangMaxChapterIndex; i++ {
-		chapterKey := strconv.Itoa(i)
-		filePath := xigaiYangQuestionSourceDir + "/" + chapterKey + ".json"
-		loadChapterQuestions(filePath, chapterKey, "xigai_yang", xigaiYangQuestionsByChapter)
+	for _, courseKey := range []string{"maogai", "xigai_li", "xigai_yang"} {
+		course := coursesByKey[courseKey]
+		log.Printf("加载%s题库...", course.Name)
+		for i := 0; i <= course.MaxChapter; i++ {
+			chapterKey := strconv.Itoa(i)
+			// 嵌入文件系统使用正斜杠，不使用filepath.Join
+			filePath := course.SourceDir + "/" + chapterKey + ".json"
+			loadChapterQuestions(filePath, chapterKey, course.Key, course.Questions)
+		}
 	}
 
 	log.Println("喵~ 全局题库加载完毕！")
@@ -108,110 +121,29 @@ func loadChapterQuestions(filePath, chapterKey, course string, targetMap map[str
 // getIncorrectQuestionsFileName 根据课程返回对应的错题文件名
 func getIncorrectQuestionsFileName(course string) string {
 	// 为每个课程返回专用的错题文件名。"xigai_li" 与 "xigai_yang" 使用各自文件。
-	switch course {
-	case "xigai_li":
-		return xigaiLiIncorrectQuestionsFile
-	case "xigai_yang":
-		return xigaiYangIncorrectQuestionsFile
-	default:
-		// 兼容老数据：如果传入的 course 以 "xigai" 开头但不是上面两种明确的变体，回退到旧的统一文件名
-		if strings.HasPrefix(course, "xigai") {
-			return xigaiIncorrectQuestionsFile
-		}
-		return maogaiIncorrectQuestionsFile
+	if cfg, ok := coursesByKey[course]; ok {
+		return cfg.IncorrectFile
 	}
+	// 兼容老数据：如果传入的 course 以 "xigai" 开头但不是明确的变体，回退到旧的统一文件名。
+	if strings.HasPrefix(course, "xigai") {
+		return xigaiIncorrectQuestionsFile
+	}
+	return maogaiIncorrectQuestionsFile
 }
 
-// getUserDataPath 获取用户特定数据文件的完整路径
-func getUserDataPath(userID, fileName string) string {
-	return filepath.Join(userDataBaseDir, userID, fileName)
+func normalizeCourse(course string) string {
+	coursesMu.RLock()
+	defer coursesMu.RUnlock()
+	if _, ok := coursesByKey[course]; ok {
+		return course
+	}
+	return "maogai"
 }
 
-// ensureUserDir 确保用户的个人数据目录存在，如果不存在则创建
-func ensureUserDir(userID string) error {
-	return os.MkdirAll(filepath.Join(userDataBaseDir, userID), os.ModePerm)
-}
-
-// loadUserJSONData 加载用户特定的JSON数据文件到指定的结构体
-// 如果文件不存在或为空，会初始化目标结构体为空状态（例如，空切片或空映射）
-func loadUserJSONData(userID, fileName string, target interface{}) error {
-	if err := ensureUserDir(userID); err != nil { // 确保用户目录存在
-		return err
-	}
-	filePath := getUserDataPath(userID, fileName)
-
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		// 文件不存在，根据目标类型初始化为空
-		switch v := target.(type) {
-		case *[]UserIncorrectQuestion:
-			*v = []UserIncorrectQuestion{}
-		case *map[string]UserQuestionStat:
-			*v = make(map[string]UserQuestionStat)
-		default:
-			// 对于其他类型，可以返回错误或尝试其他初始化，但通常是空切片/映射
-			log.Printf("加载用户数据: 文件 %s 不存在，目标类型 %T 将保持默认零值或需要特定处理", filePath, target)
-		}
-		return nil // 文件不存在不是一个错误，表示用户还没有这类数据
-	}
-
-	data, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("读取用户文件 %s 失败: %w", filePath, err)
-	}
-
-	if len(data) == 0 { // 文件存在但为空
-		switch v := target.(type) {
-		case *[]UserIncorrectQuestion:
-			*v = []UserIncorrectQuestion{}
-		case *map[string]UserQuestionStat:
-			*v = make(map[string]UserQuestionStat)
-		default:
-			log.Printf("加载用户数据: 文件 %s 为空，目标类型 %T 将保持默认零值或需要特定处理", filePath, target)
-		}
-		return nil // 空文件也表示没有数据
-	}
-
-	return json.Unmarshal(data, target)
-}
-
-// saveUserJSONData 将用户数据（通常是结构体或映射）序列化为JSON并保存到文件
-func saveUserJSONData(userID, fileName string, data interface{}) error {
-	if err := ensureUserDir(userID); err != nil { // 确保用户目录存在
-		return err
-	}
-	filePath := getUserDataPath(userID, fileName)
-	jsonData, err := json.MarshalIndent(data, "", "  ") // 使用缩进美化JSON输出
-	if err != nil {
-		return fmt.Errorf("JSON序列化用户数据到 %s 失败: %w", filePath, err)
-	}
-	return ioutil.WriteFile(filePath, jsonData, 0644) // 0644 文件权限
-}
-
-// --- 会话管理 ---
-
-// getOrCreateUserSession 获取或创建用户会话。如果会话不存在，则在内存中创建一个新的。
-func getOrCreateUserSession(userID string) *UserSession {
-	sessionsMu.RLock()
-	session, exists := userSessions[userID]
-	sessionsMu.RUnlock()
-	if exists {
-		return session
-	}
-
-	sessionsMu.Lock()
-	defer sessionsMu.Unlock()
-	// 再次检查，防止在获取写锁期间其他goroutine已创建会话 (双重检查锁定模式)
-	session, exists = userSessions[userID]
-	if exists {
-		return session
-	}
-
-	newSession := &UserSession{
-		UserID: userID,
-		// CurrentQuestions, OriginalIncorrect, CurrentQuestionIndex, CurrentMode 会在特定模式开始时设置
-	}
-	userSessions[userID] = newSession
-	return newSession
+func shuffleQuestions[T any](items []T) {
+	rngMu.Lock()
+	defer rngMu.Unlock()
+	rng.Shuffle(len(items), func(i, j int) { items[i], items[j] = items[j], items[i] })
 }
 
 // _getQuestionsForProcessing 根据章节和顺序选择,从全局题库中筛选和排序题目
@@ -220,25 +152,11 @@ func _getQuestionsForProcessing(course string, chapterChoices []string, orderCho
 	var targetChapterKeys []string
 	isSelectAll := false
 
-	// 根据课程选择题库和最大章节索引
-	var questionsByChapter map[string][]Question
-	var maxChapterIdx int
-
-	switch course {
-	case "maogai":
-		questionsByChapter = maogaiQuestionsByChapter
-		maxChapterIdx = maogaiMaxChapterIndex
-	case "xigai_li":
-		questionsByChapter = xigaiLiQuestionsByChapter
-		maxChapterIdx = xigaiLiMaxChapterIndex
-	case "xigai_yang":
-		questionsByChapter = xigaiYangQuestionsByChapter
-		maxChapterIdx = xigaiYangMaxChapterIndex
-	default:
-		// 默认回退为毛概
-		questionsByChapter = maogaiQuestionsByChapter
-		maxChapterIdx = maogaiMaxChapterIndex
-	}
+	course = normalizeCourse(course)
+	coursesMu.RLock()
+	courseCfg := coursesByKey[course]
+	questionsByChapter := courseCfg.Questions
+	coursesMu.RUnlock()
 
 	for _, choice := range chapterChoices {
 		if strings.ToLower(choice) == "all" || choice == "9" { // "9" 作为 "all" 的别名兼容旧版或简化输入
@@ -248,7 +166,7 @@ func _getQuestionsForProcessing(course string, chapterChoices []string, orderCho
 	}
 
 	if isSelectAll {
-		for i := 0; i <= maxChapterIdx; i++ { // 加载0到maxChapterIdx的所有章节
+		for i := 0; i <= courseCfg.MaxChapter; i++ { // 加载0到MaxChapter的所有章节
 			targetChapterKeys = append(targetChapterKeys, strconv.Itoa(i))
 		}
 		// 确保章节键按数字顺序排列
@@ -285,9 +203,7 @@ func _getQuestionsForProcessing(course string, chapterChoices []string, orderCho
 
 	// 根据选择的顺序处理题目
 	if orderChoice == "random" || orderChoice == "1" { // "1" 作为 "random" 的别名
-		rand.Shuffle(len(questionsToProcess), func(i, j int) {
-			questionsToProcess[i], questionsToProcess[j] = questionsToProcess[j], questionsToProcess[i]
-		})
+		shuffleQuestions(questionsToProcess)
 	}
 	// 如果是 "sequential" 或 "0" (或任何其他值),则按原始顺序（章节顺序,章节内题目顺序）
 	return questionsToProcess
@@ -303,6 +219,7 @@ func convertQuestionsToOutput(questions []Question, sessionIndexOffset int, cour
 		output[i] = QuestionOutput{
 			QuizQuestionID:         fmt.Sprintf("quiz_%s_%s_%d", course, q.OriginalChapterKey, q.OriginalIndex), // 唯一ID，格式: quiz_课程_章节_原始索引
 			DisplayNumber:          sessionIndexOffset + i + 1,                                                  // 基于最终列表的显示序号 (1-based)
+			Course:                 course,
 			OriginalChapter:        q.OriginalChapterKey,
 			OriginalQuestionNumber: q.QuestionNumber,
 			QuestionType:           q.QuestionType,
@@ -319,11 +236,16 @@ func convertQuestionsToOutput(questions []Question, sessionIndexOffset int, cour
 func convertUserIncorrectToOutput(incorrectQs []UserIncorrectQuestion, sessionIndexOffset int, course string) []QuestionOutput {
 	output := make([]QuestionOutput, len(incorrectQs))
 	for i, iq := range incorrectQs {
+		questionCourse := iq.Course
+		if questionCourse == "" {
+			questionCourse = course
+		}
 		// 为错题生成一个唯一的 QuizQuestionID，可以加上时间戳或随机数以区分同一道题的多次回顾（如果需要）
 		// 这里简化处理，基于原始章节和题号，加上列表索引
 		output[i] = QuestionOutput{
-			QuizQuestionID:         fmt.Sprintf("incorrect_%s_%s_%s_%d", course, iq.OriginalChapter, iq.QuestionNumber, sessionIndexOffset+i),
+			QuizQuestionID:         fmt.Sprintf("incorrect_%s_%s_%s_%d", questionCourse, iq.OriginalChapter, iq.QuestionNumber, sessionIndexOffset+i),
 			DisplayNumber:          sessionIndexOffset + i + 1,
+			Course:                 questionCourse,
 			OriginalChapter:        iq.OriginalChapter,
 			OriginalQuestionNumber: iq.QuestionNumber,
 			QuestionType:           iq.QuestionType,
@@ -347,6 +269,10 @@ func InitSessionHandler(ctx context.Context, c *app.RequestContext) {
 	}
 
 	userID := req.UserID
+	if err := validateUserID(userID); err != nil {
+		c.JSON(consts.StatusBadRequest, utils.H{"error": err.Error()})
+		return
+	}
 
 	// 检查用户数据目录是否存在，以判断是新用户还是返回用户
 	userDir := filepath.Join(userDataBaseDir, userID)
@@ -391,6 +317,7 @@ func QuickReviewStartHandler(ctx context.Context, c *app.RequestContext) {
 		c.JSON(consts.StatusBadRequest, utils.H{"error": "无效请求: " + err.Error()})
 		return
 	}
+	req.Course = normalizeCourse(req.Course)
 
 	session := getOrCreateUserSession(req.UserID)
 	session.mu.Lock() // 如果要修改会话状态（如 CurrentMode），则加锁
@@ -460,6 +387,7 @@ func QuizStartHandler(ctx context.Context, c *app.RequestContext) {
 		c.JSON(consts.StatusBadRequest, utils.H{"error": "无效请求: " + err.Error()})
 		return
 	}
+	req.Course = normalizeCourse(req.Course)
 	session := getOrCreateUserSession(req.UserID)
 	session.mu.Lock()
 	defer session.mu.Unlock()
@@ -498,18 +426,6 @@ func SubmitAnswerHandler(ctx context.Context, c *app.RequestContext) {
 	log.Printf("[DEBUG] SubmitAnswerHandler 收到请求: UserID=%s, QuizQuestionID=%s, UserAnswer=%s, WasCorrect=%t",
 		req.UserID, req.QuizQuestionID, req.UserAnswer, req.WasCorrect)
 
-	// 从用户 session 获取当前课程
-	session := getOrCreateUserSession(req.UserID)
-	session.mu.Lock()
-	currentCourse := session.CurrentCourse
-	session.mu.Unlock()
-
-	if currentCourse == "" {
-		log.Printf("错误: 用户 %s 的 session 中没有课程信息", req.UserID)
-		c.JSON(consts.StatusBadRequest, utils.H{"error": "会话中缺少课程信息"})
-		return
-	}
-
 	// 从 QuizQuestionID 中解析出原始题目信息 (课程、章节号和原始索引)
 	// QuizQuestionID 格式为 "quiz_<course>_<chapter>_<index>"，其中 course 可能包含下划线（例如 xigai_li）
 	raw := strings.TrimPrefix(req.QuizQuestionID, "quiz_")
@@ -521,6 +437,7 @@ func SubmitAnswerHandler(ctx context.Context, c *app.RequestContext) {
 	}
 	// course 可能有多个下划线段，章节是倒数第二段，索引是最后一段
 	coursePart := strings.Join(parts[:len(parts)-2], "_")
+	currentCourse := normalizeCourse(coursePart)
 	chapterPart := parts[len(parts)-2]
 	indexPart := parts[len(parts)-1]
 	originalQuestionIDKey := fmt.Sprintf("%s_%s_%s", coursePart, chapterPart, indexPart) // 重组为 "course_chapter_index"
@@ -572,6 +489,7 @@ func SubmitAnswerHandler(ctx context.Context, c *app.RequestContext) {
 		}
 		if !isDuplicate {
 			userIncorrect = append(userIncorrect, UserIncorrectQuestion{
+				Course:          currentCourse,
 				QuestionNumber:  originalQuestion.QuestionNumber,
 				QuestionType:    originalQuestion.QuestionType,
 				QuestionText:    originalQuestion.QuestionText,
@@ -613,6 +531,7 @@ func IncorrectQuestionsReviewStartHandler(ctx context.Context, c *app.RequestCon
 		c.JSON(consts.StatusBadRequest, utils.H{"error": "无效请求: " + err.Error()})
 		return
 	}
+	req.Course = normalizeCourse(req.Course)
 	session := getOrCreateUserSession(req.UserID)
 	session.mu.Lock()
 	defer session.mu.Unlock()
@@ -631,9 +550,7 @@ func IncorrectQuestionsReviewStartHandler(ctx context.Context, c *app.RequestCon
 	}
 
 	// 将错题随机打乱顺序
-	rand.Shuffle(len(userIncorrectRaw), func(i, j int) {
-		userIncorrectRaw[i], userIncorrectRaw[j] = userIncorrectRaw[j], userIncorrectRaw[i]
-	})
+	shuffleQuestions(userIncorrectRaw)
 
 	outputQuestions := convertUserIncorrectToOutput(userIncorrectRaw, 0, req.Course) // 转换为API输出格式
 	session.CurrentMode = "incorrect_review"
@@ -681,14 +598,8 @@ func DeleteIncorrectQuestionHandler(ctx context.Context, c *app.RequestContext) 
 		return
 	}
 
-	// 从 session 获取当前课程
-	session := getOrCreateUserSession(req.UserID)
-	session.mu.Lock()
-	currentCourse := session.CurrentCourse
-	session.mu.Unlock()
-
+	currentCourse := normalizeCourse(req.Course)
 	if currentCourse == "" {
-		log.Printf("警告: 用户 %s 的 session 中没有课程信息，默认使用毛概", req.UserID)
 		currentCourse = "maogai"
 	}
 
@@ -814,9 +725,7 @@ func UserDataClearHandler(ctx context.Context, c *app.RequestContext) {
 	}
 
 	// 可选：从内存会话中清除用户会话，如果用户当前有活动会话
-	sessionsMu.Lock()
-	delete(userSessions, userID)
-	sessionsMu.Unlock()
+	clearUserSession(userID)
 	log.Printf("信息: 用户 %s 的内存会话（如果存在）已清除。", userID)
 
 	// 也可以考虑删除用户的主目录，但这取决于是否还有其他类型的数据

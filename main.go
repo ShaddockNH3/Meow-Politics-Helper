@@ -13,7 +13,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 )
 
-//go:embed clean_outputs/* quiz.html
+//go:embed clean_outputs/* quiz.html assets/*
 var embeddedFS embed.FS
 
 // openBrowser 在服务器启动后打开浏览器
@@ -58,7 +58,7 @@ func isWSL() bool {
 // main函数，程序入口
 func main() {
 	// 使用默认配置初始化 Hertz 服务器，监听在 0.0.0.0:8899
-	h := server.Default(server.WithHostPorts("0.0.0.0:8899"))
+	h := server.Default(server.WithHostPorts(defaultBindAddress))
 
 	// 提供静态文件服务，使用嵌入的文件系统
 	h.GET("/", func(ctx context.Context, c *app.RequestContext) {
@@ -69,10 +69,36 @@ func main() {
 		}
 		c.Data(200, "text/html", data)
 	})
+	h.GET("/assets/:file", func(ctx context.Context, c *app.RequestContext) {
+		fileName := c.Param("file")
+		if strings.Contains(fileName, "/") || strings.Contains(fileName, "\\") || strings.Contains(fileName, "..") {
+			c.String(400, "Bad request")
+			return
+		}
+		data, err := embeddedFS.ReadFile("assets/" + fileName)
+		if err != nil {
+			c.String(404, "File not found")
+			return
+		}
+		contentType := "application/octet-stream"
+		if strings.HasSuffix(fileName, ".js") {
+			contentType = "application/javascript; charset=utf-8"
+		} else if strings.HasSuffix(fileName, ".css") {
+			contentType = "text/css; charset=utf-8"
+		}
+		c.Data(200, contentType, data)
+	})
 
 	// API 路由组
 	apiGroup := h.Group("/api")
 	{
+		apiGroup.GET("/network/info", NetworkInfoHandler)
+		apiGroup.GET("/courses", CoursesListHandler)
+		apiGroup.POST("/courses/delete", DeleteCustomCourseHandler)
+		apiGroup.POST("/courses/import-json", JSONImportQuestionBankHandler)
+		apiGroup.GET("/courses/custom/detail", CustomCourseDetailHandler)
+		apiGroup.POST("/courses/custom/save", SaveCustomCourseHandler)
+
 		sessionGroup := apiGroup.Group("/session")
 		{
 			// POST /api/session/init - 初始化用户会话 (现在需要 userID)
@@ -110,14 +136,26 @@ func main() {
 			// POST /api/user/data/clear - 清理用户数据
 			userGroup.POST("/data/clear", UserDataClearHandler)
 		}
+
+		aiGroup := apiGroup.Group("/ai")
+		{
+			aiGroup.GET("/config", AIConfigStatusHandler)
+			aiGroup.GET("/models", AIModelsHandler)
+			aiGroup.GET("/import/status", AIImportTaskStatusHandler)
+			aiGroup.POST("/config", SaveAIConfigHandler)
+			aiGroup.POST("/import", AIImportQuestionBankHandler)
+		}
 	}
 
-	log.Println("喵喵学习小助手 Go 后端已启动，监听于 http://0.0.0.0:8899")
+	log.Printf("喵喵学习小助手 Go 后端已启动，监听于 http://%s", defaultBindAddress)
+	for _, addr := range detectLANAddresses() {
+		log.Printf("同一局域网可访问: %s (%s)", addr.URL, addr.Name)
+	}
 
 	// 启动goroutine在服务器启动后打开浏览器
 	go func() {
 		time.Sleep(1 * time.Second) // 等待服务器启动
-		openBrowser("http://localhost:8899")
+		openBrowser("http://localhost:" + serverPort())
 	}()
 
 	h.Spin() // 启动服务器并开始监听请求

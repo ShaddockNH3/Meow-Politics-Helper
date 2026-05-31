@@ -7,6 +7,8 @@ import (
 
 // --- 配置常量 ---
 const (
+	defaultBindAddress              = "0.0.0.0:8899"
+	projectURL                      = "https://github.com/ShaddockNH3/Meow-Politics-Helper"
 	maogaiQuestionSourceDir         = "clean_outputs/maogao_202506_kang_outputs"
 	xigaiLiQuestionSourceDir        = "clean_outputs/xigai_202412_li_outputs"
 	xigaiYangQuestionSourceDir      = "clean_outputs/xigai_202512_yang_outputs"
@@ -21,7 +23,59 @@ const (
 	xigaiYangIncorrectQuestionsFile = "xigai_yang_incorrect_questions.json" // 习概 杨老师 错题文件
 	deleteIncorrectQuestionsFile    = "deleted_incorrect_questions.json"
 	questionStatsFile               = "question_stats.json"
+	aiConfigFile                    = "ai_config.json"
+	aiQuestionBanksDir              = "ai_question_banks"
 )
+
+type CourseConfig struct {
+	Key           string
+	Name          string
+	SourceDir     string
+	MaxChapter    int
+	ChapterNames  map[string]string
+	Questions     map[string][]Question
+	IncorrectFile string
+}
+
+type CourseInfo struct {
+	Key           string   `json:"key"`
+	Name          string   `json:"name"`
+	MaxChapter    int      `json:"max_chapter"`
+	ChapterNames  []string `json:"chapter_names,omitempty"`
+	Custom        bool     `json:"custom"`
+	QuestionCount int      `json:"question_count"`
+}
+
+type AIConfig struct {
+	APIKey  string `json:"api_key"`
+	BaseURL string `json:"base_url"`
+	APIPath string `json:"api_path"`
+	Model   string `json:"model"`
+}
+
+type AIConfigStatus struct {
+	Configured bool   `json:"configured"`
+	BaseURL    string `json:"base_url"`
+	APIPath    string `json:"api_path"`
+	Model      string `json:"model"`
+	KeyPreview string `json:"key_preview,omitempty"`
+}
+
+type AIModelInfo struct {
+	ID string `json:"id"`
+}
+
+type AIImportTask struct {
+	ID          string              `json:"id"`
+	UserID      string              `json:"-"`
+	Status      string              `json:"status"`
+	Message     string              `json:"message"`
+	Error       string              `json:"error,omitempty"`
+	Course      *AIQuestionBankMeta `json:"course,omitempty"`
+	Questions   int                 `json:"questions,omitempty"`
+	CreatedAt   time.Time           `json:"created_at"`
+	CompletedAt *time.Time          `json:"completed_at,omitempty"`
+}
 
 // --- 数据结构定义 ---
 type Question struct {
@@ -39,6 +93,7 @@ type Question struct {
 type QuestionOutput struct {
 	QuizQuestionID         string            `json:"quiz_question_id"`         // 在当前测验/回顾中的唯一ID
 	DisplayNumber          int               `json:"display_number"`           // 在当前列表中的显示序号 (1-based)
+	Course                 string            `json:"course"`                   // 题目所属课程/题库
 	OriginalChapter        string            `json:"original_chapter"`         // 原始章节键
 	OriginalQuestionNumber string            `json:"original_question_number"` // 原始题号
 	QuestionType           string            `json:"question_type"`
@@ -48,6 +103,7 @@ type QuestionOutput struct {
 }
 
 type UserIncorrectQuestion struct {
+	Course          string            `json:"course,omitempty"`
 	QuestionNumber  string            `json:"question_number"`
 	QuestionType    string            `json:"question_type"`
 	QuestionText    string            `json:"question_text"`
@@ -112,6 +168,75 @@ type SubmitAnswerRequest struct {
 
 type DeleteIncorrectQuestionRequest struct {
 	UserID                 string `json:"user_id" vd:"required"`
+	Course                 string `json:"course"`
 	OriginalChapter        string `json:"original_chapter" vd:"required"`
 	OriginalQuestionNumber string `json:"original_question_number" vd:"required"`
+}
+
+type SaveAIConfigRequest struct {
+	UserID  string `json:"user_id" vd:"required"`
+	APIKey  string `json:"api_key"`
+	BaseURL string `json:"base_url"`
+	APIPath string `json:"api_path"`
+	Model   string `json:"model"`
+}
+
+type AIImportQuestionBankRequest struct {
+	UserID       string `json:"user_id" vd:"required"`
+	CourseKey    string `json:"course_key"`
+	CourseName   string `json:"course_name"`
+	TargetMode   string `json:"target_mode"`
+	TargetCourse string `json:"target_course"`
+	ChapterKey   string `json:"chapter_key"`
+	ChapterName  string `json:"chapter_name"`
+	SystemPrompt string `json:"system_prompt"`
+	SourceText   string `json:"source_text"`
+}
+
+type JSONImportQuestionBankRequest struct {
+	UserID       string `json:"user_id" vd:"required"`
+	CourseKey    string `json:"course_key"`
+	CourseName   string `json:"course_name"`
+	TargetMode   string `json:"target_mode"`
+	TargetCourse string `json:"target_course"`
+	ChapterKey   string `json:"chapter_key"`
+	ChapterName  string `json:"chapter_name"`
+	JSONText     string `json:"json_text" vd:"required"`
+}
+
+type AIQuestionBankMeta struct {
+	CourseKey     string            `json:"course_key"`
+	CourseName    string            `json:"course_name"`
+	ChapterCount  int               `json:"chapter_count"`
+	QuestionCount int               `json:"question_count"`
+	ChapterNames  map[string]string `json:"chapter_names,omitempty"`
+	CreatedAt     time.Time         `json:"created_at"`
+	UpdatedAt     time.Time         `json:"updated_at,omitempty"`
+}
+
+type DeleteCustomCourseRequest struct {
+	UserID string `json:"user_id" vd:"required"`
+	Course string `json:"course" vd:"required"`
+}
+
+type SaveCustomCourseRequest struct {
+	UserID       string                `json:"user_id" vd:"required"`
+	Course       string                `json:"course" vd:"required"`
+	CourseName   string                `json:"course_name" vd:"required"`
+	ChapterNames map[string]string     `json:"chapter_names"`
+	Chapters     map[string][]Question `json:"chapters"`
+	Questions    []Question            `json:"questions"`
+}
+
+type NetworkAddress struct {
+	Name string `json:"name"`
+	IP   string `json:"ip"`
+	URL  string `json:"url"`
+}
+
+type NetworkInfoResponse struct {
+	Port     string           `json:"port"`
+	LocalURL string           `json:"local_url"`
+	LANURLs  []NetworkAddress `json:"lan_urls"`
+	Hint     string           `json:"hint"`
 }
