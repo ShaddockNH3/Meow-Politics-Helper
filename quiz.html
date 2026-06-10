@@ -99,9 +99,11 @@
                 <button @click="navigateTo('jsonImport')" class="btn btn-secondary btn-full-width">
                     导入题库（粘贴 JSON）
                 </button>
+                <!--
                 <button @click="navigateTo('aiImport')" class="btn btn-secondary btn-full-width">
                     AI API 导入题库
                 </button>
+                -->
                 <button @click="navigateTo('customCourseManager')" class="btn btn-outline btn-full-width">
                     自定义题库管理
                 </button>
@@ -123,15 +125,20 @@
                 <div v-if="networkInfo" class="network-panel mb-6">
                     <h3>手机访问地址</h3>
                     <p>{{ networkInfo.hint }}</p>
+                    <p v-if="networkInfo.lan_url_count > 0" class="network-count">检测到 {{ networkInfo.lan_url_count }} 个局域网 / 多网卡地址，可逐个尝试。</p>
                     <div class="network-url-row">
                         <span>本机</span>
                         <button @click="copyText(networkInfo.local_url)" class="network-url">{{ networkInfo.local_url }}</button>
                     </div>
-                    <div v-for="item in networkInfo.lan_urls" :key="item.url" class="network-url-row">
-                        <span>{{ item.name }}</span>
-                        <button @click="copyText(item.url)" class="network-url">{{ item.url }}</button>
+                    <div v-for="(item, index) in networkInfo.lan_urls" :key="item.url" class="network-url-row">
+                        <span :title="item.name">网卡 {{ index + 1 }}</span>
+                        <button @click="copyText(item.url)" class="network-url">
+                            <strong>{{ item.url }}</strong>
+                            <small>{{ item.name }} · {{ item.ip }}</small>
+                        </button>
                     </div>
-                    <p v-if="networkInfo.lan_urls.length === 0" class="text-xs text-gray-500 mt-2">暂时没有检测到局域网地址。请确认电脑已连接 Wi-Fi 或有线局域网。</p>
+                    <button v-if="networkInfo.lan_urls.length > 1" @click="copyNetworkURLs" class="btn btn-outline btn-full-width">复制全部局域网地址</button>
+                    <p v-if="networkInfo.lan_urls.length === 0" class="text-xs text-gray-500 mt-2">暂时没有检测到可用于手机访问的 IPv4 地址。请确认电脑已连接 Wi-Fi、有线局域网、热点或 VPN。</p>
                 </div>
                 <div v-else class="guide-section">
                     <h3>正在检测网络</h3>
@@ -143,11 +150,7 @@
             <div v-if="currentView === 'jsonImport'">
                 <div class="guide-section">
                     <h3>粘贴 JSON 导入题库</h3>
-                    <p>可以先在任意 AI 网页端生成 JSON，再粘贴到这里。格式使用 clean_outputs 兼容字段：question_number、question_type、question_text、options、correct_answer、correct_count、error_count。</p>
-                    <label class="text-sm text-gray-600 font-semibold">给网页端 AI 复制的提示词</label>
-                    <textarea v-model="defaultAISystemPrompt" class="mono-textarea prompt-preview" readonly></textarea>
-                    <button @click="copyJSONPrompt" class="btn btn-outline btn-full-width">复制提示词</button>
-                    <p v-if="jsonPromptCopied" class="text-sm text-green-700 mt-2">提示词已复制，可以粘到 AI 网页端后再附上参考资料。</p>
+                    <p>粘贴 clean_outputs 兼容 JSON 导入题库。字段包含：question_number、question_type、question_text、options、correct_answer、correct_count、error_count。</p>
                     <div class="segmented-row">
                         <label><input type="radio" v-model="jsonImportForm.target_mode" value="new"> 新建自定义题库</label>
                         <label><input type="radio" v-model="jsonImportForm.target_mode" value="existing" :disabled="customCourses.length === 0"> 导入到已有题库的新章节</label>

@@ -204,7 +204,13 @@
                     try {
                         const response = await fetch(`${API_BASE_URL}/api/network/info`);
                         if (response.ok) {
-                            networkInfo.value = await response.json();
+                            const data = await response.json();
+                            const lanURLs = Array.isArray(data.lan_urls) ? data.lan_urls : [];
+                            networkInfo.value = {
+                                ...data,
+                                lan_urls: lanURLs,
+                                lan_url_count: data.lan_url_count ?? lanURLs.length
+                            };
                         }
                     } catch (err) {
                         console.warn('网络地址检测失败:', err);
@@ -506,6 +512,11 @@
                     } catch (err) {
                         prompt('复制失败，可以手动复制：', text);
                     }
+                };
+
+                const copyNetworkURLs = async () => {
+                    const urls = (networkInfo.value?.lan_urls || []).map(item => item.url).filter(Boolean);
+                    await copyText(urls.join('\n'));
                 };
 
                 const saveShortcutSettings = () => {
@@ -1248,7 +1259,7 @@
 
                 return {
                     isLoading, errorMessage, userIdError, currentView, viewTitle, userId, inputUserId,
-                    networkInfo, loadNetworkInfo, copyText, shortcutDraft, shortcutCapture, startShortcutCapture, isCapturingShortcut, saveShortcutSettings, resetShortcutSettings,
+                    networkInfo, loadNetworkInfo, copyText, copyNetworkURLs, shortcutDraft, shortcutCapture, startShortcutCapture, isCapturingShortcut, saveShortcutSettings, resetShortcutSettings,
                     courses, availableChapters, courseDisplayName, selectedChapters, selectedOrder, selectedCourse,
                     aiStatus, aiConfigForm, aiModels, aiModelMessage, loadAIModels, aiImportForm, aiImportMessage, aiImportTask, saveAIConfig, importAIQuestionBank,
                     defaultAISystemPrompt, jsonPromptCopied, jsonImportForm, jsonImportMessage, importJSONQuestionBank, copyJSONPrompt, customCourses, customEditor, customEditorChapterKeys, customEditorQuestions, openCustomCourseEditor, addEditorQuestion, removeEditorQuestion, addEditorChapter, deleteEditorChapter, saveCustomCourse, deleteCustomCourse,

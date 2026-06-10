@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"sort"
 	"strings"
 
 	"github.com/cloudwego/hertz/pkg/app"
@@ -49,7 +50,7 @@ func detectLANAddresses() []NetworkAddress {
 				continue
 			}
 			ipv4 := ip.To4()
-			if ipv4 == nil || !ipv4.IsPrivate() {
+			if ipv4 == nil || !isReachableIPv4(ipv4) {
 				continue
 			}
 			ipText := ipv4.String()
@@ -58,20 +59,38 @@ func detectLANAddresses() []NetworkAddress {
 			}
 			seen[ipText] = true
 			addresses = append(addresses, NetworkAddress{
-				Name: iface.Name,
-				IP:   ipText,
-				URL:  "http://" + ipText + ":" + port,
+				Name:           iface.Name,
+				InterfaceIndex: iface.Index,
+				IP:             ipText,
+				URL:            "http://" + ipText + ":" + port,
 			})
 		}
 	}
+	sort.SliceStable(addresses, func(i, j int) bool {
+		if addresses[i].InterfaceIndex == addresses[j].InterfaceIndex {
+			return addresses[i].IP < addresses[j].IP
+		}
+		return addresses[i].InterfaceIndex < addresses[j].InterfaceIndex
+	})
 	return addresses
 }
 
 func NetworkInfoHandler(ctx context.Context, c *app.RequestContext) {
+	lanURLs := detectLANAddresses()
 	c.JSON(consts.StatusOK, utils.H{
-		"port":      serverPort(),
-		"local_url": "http://localhost:" + serverPort(),
-		"lan_urls":  detectLANAddresses(),
-		"hint":      "手机和电脑连接同一个 Wi-Fi 后，在手机浏览器输入局域网地址即可访问。若打不开，请检查系统防火墙是否允许本程序访问专用网络。",
+		"port":          serverPort(),
+		"local_url":     "http://localhost:" + serverPort(),
+		"lan_urls":      lanURLs,
+		"lan_url_count": len(lanURLs),
+		"hint":          "已列出检测到的所有可用 IPv4 网卡地址。手机和电脑连接同一个 Wi-Fi、热点或 VPN 后，在手机浏览器输入对应地址即可访问；若打不开，请检查系统防火墙是否允许本程序访问专用网络。",
 	})
+}
+
+func isReachableIPv4(ip net.IP) bool {
+	return ip != nil &&
+		!ip.IsUnspecified() &&
+		!ip.IsLoopback() &&
+		!ip.IsMulticast() &&
+		!ip.IsLinkLocalUnicast() &&
+		!ip.IsLinkLocalMulticast()
 }

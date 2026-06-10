@@ -35,10 +35,13 @@
 从 [Releases](https://github.com/ShaddockNH3/Meow-Politics-Helper/releases) 下载对应平台的可执行文件：
 
 - Windows：`Meow-Politics-Helper-windows-amd64.exe`
+- Windows ARM64：`Meow-Politics-Helper-windows-arm64.exe`
+- Linux：`Meow-Politics-Helper-linux-amd64`
+- Linux ARM64：`Meow-Politics-Helper-linux-arm64`
+- macOS Intel：`Meow-Politics-Helper-darwin-amd64`
+- macOS Apple Silicon：`Meow-Politics-Helper-darwin-arm64`
 
 下载后直接运行即可。Windows 用户通常双击 `.exe`，程序启动后会自动打开浏览器页面。
-
-> 由于近期本地没有 Linux 环境，所以 Linux 用户可以自己拉下来编译。早年不清楚 Github 规范，另一个分支有史，所以整个仓库应该有 100MB 多，未来清理。
 
 ## 自定义题库
 

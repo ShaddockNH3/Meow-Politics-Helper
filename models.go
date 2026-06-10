@@ -229,14 +229,16 @@ type SaveCustomCourseRequest struct {
 }
 
 type NetworkAddress struct {
-	Name string `json:"name"`
-	IP   string `json:"ip"`
-	URL  string `json:"url"`
+	Name           string `json:"name"`
+	InterfaceIndex int    `json:"interface_index"`
+	IP             string `json:"ip"`
+	URL            string `json:"url"`
 }
 
 type NetworkInfoResponse struct {
-	Port     string           `json:"port"`
-	LocalURL string           `json:"local_url"`
-	LANURLs  []NetworkAddress `json:"lan_urls"`
-	Hint     string           `json:"hint"`
+	Port        string           `json:"port"`
+	LocalURL    string           `json:"local_url"`
+	LANURLs     []NetworkAddress `json:"lan_urls"`
+	LANURLCount int              `json:"lan_url_count"`
+	Hint        string           `json:"hint"`
 }

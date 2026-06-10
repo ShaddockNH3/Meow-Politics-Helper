@@ -162,9 +162,12 @@
         .network-panel { border: 1px solid #bee3f8; background: #ebf8ff; border-radius: 8px; padding: 12px; }
         .network-panel h3 { margin: 0 0 6px; color: #2c5282; font-weight: 700; }
         .network-panel p { color: #4a5568; font-size: 0.875rem; line-height: 1.5; margin: 0 0 8px; }
+        .network-panel .network-count { color: #2b6cb0; font-weight: 700; }
         .network-url-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
         .network-url-row span { flex: 0 0 88px; color: #4a5568; font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .network-url { flex: 1; text-align: left; border: 1px solid #90cdf4; background: white; color: #2b6cb0; border-radius: 6px; padding: 7px 9px; cursor: pointer; font-family: Consolas, 'Courier New', monospace; font-size: 0.875rem; overflow-wrap: anywhere; }
+        .network-url strong, .network-url small { display: block; overflow-wrap: anywhere; }
+        .network-url small { margin-top: 2px; color: #718096; font-size: 0.75rem; }
         .shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
         .shortcut-grid label { display: block; color: #4a5568; font-size: 0.875rem; }
         .shortcut-grid span { display: block; margin-bottom: 4px; font-weight: 600; }
