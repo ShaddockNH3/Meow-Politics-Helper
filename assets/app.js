@@ -103,10 +103,6 @@
                 const feedbackMessage = ref('');
                 const isCurrentAnswerCorrect = ref(false);
                 const quizResults = ref({ total_answered: 0, total_correct: 0 });
-                const aiStatus = ref({ configured: false, base_url: 'https://api.openai.com/v1', api_path: '/chat/completions', model: 'gpt-4.1-mini' });
-                const aiConfigForm = ref({ api_key: '', base_url: 'https://api.openai.com/v1', api_path: '/chat/completions', model: 'gpt-4.1-mini' });
-                const aiModels = ref([{ id: 'gpt-4.1-mini' }]);
-                const aiModelMessage = ref('');
                 const defaultAISystemPrompt = `你是一个严谨的题库生成器。请从用户提供的材料中生成适合刷题的选择题。
 
 重要边界：
@@ -143,15 +139,10 @@
     "error_count": 0
   }
 ]`;
-                const aiImportForm = ref({ course_key: '', course_name: 'AI 生成题库', chapter_name: 'AI 导入', system_prompt: defaultAISystemPrompt, source_text: '' });
                 const importTargetDefaults = () => ({ target_mode: 'new', target_course: '', course_key: '', course_name: '自定义题库', chapter_key: '', chapter_name: '新章节' });
                 const jsonPromptCopied = ref(false);
                 const jsonImportForm = ref({ ...importTargetDefaults(), json_text: '' });
-                aiImportForm.value = { ...aiImportForm.value, target_mode: 'new', target_course: '', chapter_key: '' };
-                const aiImportMessage = ref('');
-                const aiImportTask = ref(null);
                 const jsonImportMessage = ref('');
-                let savingAIConfig = false;
                 const customCourses = computed(() => courses.value.filter(course => course.custom));
                 const customEditor = ref({ course: '', meta: null, chapters: {}, selectedChapter: '', message: '' });
                 const customEditorChapterKeys = computed(() => Object.keys(customEditor.value.chapters || {}).sort((a, b) => Number(a) - Number(b)));
@@ -233,123 +224,10 @@
                     }
                 };
 
-                const loadAIStatus = async () => {
-                    if (!userId.value) return;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/ai/config?user_id=${encodeURIComponent(userId.value)}`);
-                        if (response.ok) {
-                            aiStatus.value = await response.json();
-                            aiConfigForm.value.base_url = aiStatus.value.base_url || aiConfigForm.value.base_url;
-                            aiConfigForm.value.api_path = aiStatus.value.api_path || aiConfigForm.value.api_path;
-                            aiConfigForm.value.model = aiStatus.value.model || aiConfigForm.value.model;
-                            await loadAIModels();
-                        }
-                    } catch (err) {
-                        console.warn('AI 配置状态加载失败:', err);
-                    }
-                };
-
-                const loadAIModels = async () => {
-                    if (!userId.value) return;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/ai/models?user_id=${encodeURIComponent(userId.value)}`);
-                            const data = await response.json();
-                            if (response.ok && Array.isArray(data.models) && data.models.length > 0) {
-                                aiModels.value = data.models;
-                                aiModelMessage.value = data.message || '';
-                                if (!aiModels.value.some(item => item.id === aiConfigForm.value.model)) {
-                                    aiConfigForm.value.model = aiModels.value[0].id;
-                                    aiModelMessage.value = (aiModelMessage.value ? aiModelMessage.value + '；' : '') + `已自动切换到 ${aiConfigForm.value.model}`;
-                                    await syncAIConfig({ quiet: true });
-                                }
-                            }
-                    } catch (err) {
-                        aiModelMessage.value = '模型列表获取失败，保留默认模型';
-                    }
-                };
-
-                const saveAIConfig = async () => {
-                    if (!userId.value) return;
-                    savingAIConfig = true;
-                    isLoading.value = true;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/ai/config`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ user_id: userId.value, ...aiConfigForm.value })
-                        });
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.error || 'AI 配置保存失败');
-                        aiImportMessage.value = data.message || 'AI 配置已保存';
-                        aiConfigForm.value.api_key = '';
-                        await loadAIStatus();
-                    } catch (err) {
-                        errorMessage.value = err.message;
-                    } finally {
-                        isLoading.value = false;
-                        savingAIConfig = false;
-                    }
-                };
-
-                const syncAIConfig = async ({ quiet = false } = {}) => {
-                    if (!userId.value || savingAIConfig) return false;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/ai/config`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ user_id: userId.value, ...aiConfigForm.value })
-                        });
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.error || 'AI 配置保存失败');
-                        aiStatus.value = { ...aiStatus.value, base_url: aiConfigForm.value.base_url, api_path: aiConfigForm.value.api_path, model: aiConfigForm.value.model, configured: true, key_preview: data.key_preview || aiStatus.value.key_preview };
-                        if (!quiet) aiImportMessage.value = data.message || 'AI 配置已保存';
-                        aiConfigForm.value.api_key = '';
-                        return true;
-                    } catch (err) {
-                        if (!quiet) errorMessage.value = err.message;
-                        return false;
-                    }
-                };
-
-                const appendImportTarget = (formData, form) => {
-                    formData.append('target_mode', form.target_mode || 'new');
-                    formData.append('target_course', form.target_course || '');
-                    formData.append('course_key', form.course_key || form.course_name || '自定义题库');
-                    formData.append('course_name', form.course_name || '自定义题库');
-                    formData.append('chapter_key', form.chapter_key || '');
-                    formData.append('chapter_name', form.chapter_name || '新章节');
-                };
-
                 const normalizeImportTarget = (form) => {
                     if (form.target_mode === 'existing' && !form.target_course) {
                         const first = customCourses.value[0];
                         if (first) form.target_course = first.key;
-                    }
-                };
-
-                const importAIQuestionBank = async () => {
-                    if (!userId.value) return;
-                    aiImportMessage.value = '';
-                    aiImportTask.value = null;
-                    try {
-                        const synced = await syncAIConfig({ quiet: true });
-                        if (!synced) throw new Error('AI 配置同步失败，请先保存配置');
-                        const formData = new FormData();
-                        formData.append('user_id', userId.value);
-                        normalizeImportTarget(aiImportForm.value);
-                        appendImportTarget(formData, aiImportForm.value);
-                        formData.append('system_prompt', aiImportForm.value.system_prompt || defaultAISystemPrompt);
-                        formData.append('source_text', aiImportForm.value.source_text);
-                        const response = await fetch(`${API_BASE_URL}/api/ai/import`, { method: 'POST', body: formData });
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.error || 'AI 导入失败');
-                        aiImportMessage.value = data.message || '题库生成已在后台开始';
-                        aiImportTask.value = { id: data.task_id, status: 'running', message: aiImportMessage.value };
-                        pollAIImportTask(data.task_id);
-                    } catch (err) {
-                        errorMessage.value = err.message === 'Failed to fetch'
-                            ? '无法连接本地导入接口。请确认当前页面来自正在运行的新版 exe，并检查服务是否仍在运行。'
-                            : err.message;
                     }
                 };
 
@@ -377,29 +255,6 @@
                     await copyText(defaultAISystemPrompt);
                     jsonPromptCopied.value = true;
                     setTimeout(() => { jsonPromptCopied.value = false; }, 1800);
-                };
-
-                const pollAIImportTask = async (taskId) => {
-                    if (!taskId) return;
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/api/ai/import/status?user_id=${encodeURIComponent(userId.value)}&task_id=${encodeURIComponent(taskId)}`);
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.error || '任务状态获取失败');
-                        aiImportTask.value = data;
-                        aiImportMessage.value = data.message || aiImportMessage.value;
-                        if (data.status === 'completed') {
-                            await loadCourses();
-                            selectedCourse.value = data.course?.course_key || selectedCourse.value;
-                            return;
-                        }
-                        if (data.status === 'failed') {
-                            errorMessage.value = data.error || '题库生成失败';
-                            return;
-                        }
-                        setTimeout(() => pollAIImportTask(taskId), 2000);
-                    } catch (err) {
-                        errorMessage.value = err.message;
-                    }
                 };
 
                 const deleteCustomCourse = async (course) => {
@@ -595,7 +450,6 @@
                             localStorage.setItem('quizAppUserId', userId.value);
                             refreshShortcutSettings();
                             loadCourses();
-                            loadAIStatus();
                             loadSavedQuizState(); // Load quiz state for this user
                             inputUserId.value = ''; 
                             console.log(data.is_new_user ? `新用户 '${userId.value}' 会话已创建。` : `用户 '${userId.value}' 会话已建立。`);
@@ -746,7 +600,6 @@
                         case 'shortcutSettings': viewTitle.value = '自定义快捷键'; break;
                         case 'mobileAccess': viewTitle.value = '手机访问'; break;
                         case 'jsonImport': viewTitle.value = '导入题库'; break;
-                        case 'aiImport': viewTitle.value = 'AI API 导入题库'; break;
                         case 'customCourseManager': viewTitle.value = '自定义题库管理'; break;
                         case 'customCourseEditor': viewTitle.value = '自定义题库编辑'; break;
                         default: viewTitle.value = '喵喵学习小助手';
@@ -771,7 +624,7 @@
                 };
 
                 const goBackOneView = () => {
-                    if (isInQuestionView.value || currentView.value === 'chapterOrderSelection' || currentView.value === 'modeSelection' || currentView.value === 'guideView' || currentView.value === 'shortcutSettings' || currentView.value === 'mobileAccess' || currentView.value === 'jsonImport' || currentView.value === 'aiImport' || currentView.value === 'customCourseManager' || currentView.value === 'customCourseEditor' || currentView.value === 'controlMode' || currentView.value === 'resultsView') {
+                    if (isInQuestionView.value || currentView.value === 'chapterOrderSelection' || currentView.value === 'modeSelection' || currentView.value === 'guideView' || currentView.value === 'shortcutSettings' || currentView.value === 'mobileAccess' || currentView.value === 'jsonImport' || currentView.value === 'customCourseManager' || currentView.value === 'customCourseEditor' || currentView.value === 'controlMode' || currentView.value === 'resultsView') {
                         goBackToMenu();
                     }
                 };
@@ -1060,8 +913,7 @@
                         const requestBody = {
                             user_id: userId.value,
                             quiz_question_id: currentQuestion.value.quiz_question_id,
-                            user_answer: userAnswerString,
-                            was_correct: isCurrentAnswerCorrect.value 
+                            user_answer: userAnswerString
                         };
                         console.log('[DEBUG] 提交答案:', JSON.stringify(requestBody, null, 2));
                         fetch(url, { 
@@ -1261,7 +1113,6 @@
                     isLoading, errorMessage, userIdError, currentView, viewTitle, userId, inputUserId,
                     networkInfo, loadNetworkInfo, copyText, copyNetworkURLs, shortcutDraft, shortcutCapture, startShortcutCapture, isCapturingShortcut, saveShortcutSettings, resetShortcutSettings,
                     courses, availableChapters, courseDisplayName, selectedChapters, selectedOrder, selectedCourse,
-                    aiStatus, aiConfigForm, aiModels, aiModelMessage, loadAIModels, aiImportForm, aiImportMessage, aiImportTask, saveAIConfig, importAIQuestionBank,
                     defaultAISystemPrompt, jsonPromptCopied, jsonImportForm, jsonImportMessage, importJSONQuestionBank, copyJSONPrompt, customCourses, customEditor, customEditorChapterKeys, customEditorQuestions, openCustomCourseEditor, addEditorQuestion, removeEditorQuestion, addEditorChapter, deleteEditorChapter, saveCustomCourse, deleteCustomCourse,
                     activeMode, modeDisplayName,
                     allModeQuestions, currentQuestion, totalQuestions, originalTotalQuestions, isQuizCompleted, currentQuestionIndex,

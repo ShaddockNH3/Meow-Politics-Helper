@@ -99,11 +99,6 @@
                 <button @click="navigateTo('jsonImport')" class="btn btn-secondary btn-full-width">
                     导入题库（粘贴 JSON）
                 </button>
-                <!--
-                <button @click="navigateTo('aiImport')" class="btn btn-secondary btn-full-width">
-                    AI API 导入题库
-                </button>
-                -->
                 <button @click="navigateTo('customCourseManager')" class="btn btn-outline btn-full-width">
                     自定义题库管理
                 </button>
@@ -149,8 +144,17 @@
 
             <div v-if="currentView === 'jsonImport'">
                 <div class="guide-section">
+                    <h3>用 AI 生成题库</h3>
+                    <p>本工具不再内置 AI 接口。想用 AI 出题的话：复制下面的提示词，连同你的学习材料一起发给任意 AI（网页版即可），把返回的 JSON 粘贴到下方导入。</p>
+                    <details class="prompt-details">
+                        <summary>查看生成提示词</summary>
+                        <textarea readonly class="prompt-preview mono-textarea">{{ defaultAISystemPrompt }}</textarea>
+                    </details>
+                    <button @click="copyJSONPrompt" class="btn btn-outline btn-full-width">{{ jsonPromptCopied ? '已复制 ✓' : '复制 AI 生成提示词' }}</button>
+                </div>
+                <div class="guide-section">
                     <h3>粘贴 JSON 导入题库</h3>
-                    <p>粘贴 clean_outputs 兼容 JSON 导入题库。字段包含：question_number、question_type、question_text、options、correct_answer、correct_count、error_count。</p>
+                    <p>粘贴 clean_outputs 兼容 JSON 导入题库。字段包含：question_number、question_type、question_text、options、correct_answer。</p>
                     <div class="segmented-row">
                         <label><input type="radio" v-model="jsonImportForm.target_mode" value="new"> 新建自定义题库</label>
                         <label><input type="radio" v-model="jsonImportForm.target_mode" value="existing" :disabled="customCourses.length === 0"> 导入到已有题库的新章节</label>
@@ -185,57 +189,10 @@
                 </div>
             </div>
 
-            <div v-if="currentView === 'aiImport'">
-                <div class="guide-section">
-                    <h3>AI 服务配置</h3>
-                    <p>这里使用 OpenAI 兼容接口格式：API Base URL 用于拉取 <code>/models</code>，API 路径用于生成题库，默认 <code>/chat/completions</code>。API Key 只保存在当前用户的本地配置文件中，页面只显示脱敏状态。</p>
-                    <p class="text-xs text-gray-500">如果某个中转模型生成内容明显跑题，通常是服务端模型兼容或串台问题；建议换模型/服务，或用“导入题库（粘贴 JSON）”先人工确认后导入。</p>
-                    <p><strong>状态：</strong>{{ aiStatus.configured ? ('已配置 ' + (aiStatus.key_preview || '')) : '未配置' }}</p>
-                    <input type="password" v-model="aiConfigForm.api_key" placeholder="API Key，留空则保留原 Key">
-                    <input type="text" v-model="aiConfigForm.base_url" placeholder="API Base URL，例如 https://api.openai.com/v1">
-                    <input type="text" v-model="aiConfigForm.api_path" placeholder="API 路径，默认 /chat/completions">
-                    <select v-model="aiConfigForm.model">
-                        <option v-for="model in aiModels" :key="model.id" :value="model.id">{{ model.id }}</option>
-                    </select>
-                    <button @click="loadAIModels" class="btn btn-outline btn-full-width">自动拉取模型列表</button>
-                    <p v-if="aiModelMessage" class="text-xs text-gray-500 mt-1">{{ aiModelMessage }}</p>
-                    <button @click="saveAIConfig" class="btn btn-primary btn-full-width">保存 AI 配置</button>
-                </div>
-                <div class="guide-section">
-                    <h3>导入生成题库</h3>
-                    <div class="segmented-row">
-                        <label><input type="radio" v-model="aiImportForm.target_mode" value="new"> 新建自定义题库</label>
-                        <label><input type="radio" v-model="aiImportForm.target_mode" value="existing" :disabled="customCourses.length === 0"> 导入到已有题库的新章节</label>
-                    </div>
-                    <template v-if="aiImportForm.target_mode === 'existing'">
-                        <select v-model="aiImportForm.target_course">
-                            <option value="">选择自定义题库</option>
-                            <option v-for="course in customCourses" :key="course.key" :value="course.key">{{ course.name }}</option>
-                        </select>
-                    </template>
-                    <template v-else>
-                        <input type="text" v-model="aiImportForm.course_name" placeholder="题库名称">
-                        <input type="text" v-model="aiImportForm.course_key" placeholder="题库标识，可留空自动生成">
-                    </template>
-                    <div class="two-column-form">
-                        <input type="text" v-model="aiImportForm.chapter_key" placeholder="章节号，可留空自动新章节">
-                        <input type="text" v-model="aiImportForm.chapter_name" placeholder="章节名，例如 新一章选择题">
-                    </div>
-                    <label class="text-sm text-gray-600 font-semibold">系统提示词</label>
-                    <textarea v-model="aiImportForm.system_prompt" placeholder="系统提示词" rows="7"></textarea>
-                    <label class="text-sm text-gray-600 font-semibold">材料文字</label>
-                    <textarea v-model="aiImportForm.source_text" class="ai-textarea-large" placeholder="可以粘贴文字材料、要求、题型偏好等" rows="10"></textarea>
-                    <p class="text-xs text-gray-500">文件上传（PDF/DOCX/图片解析）暂列为未来计划。当前请先把材料文字复制到上方文本框，或在网页端 AI 生成 JSON 后走“导入题库（粘贴 JSON）”。</p>
-                    <button @click="importAIQuestionBank" class="btn btn-secondary btn-full-width">生成题库</button>
-                    <p v-if="aiImportMessage" class="text-sm text-green-700 mt-2">{{ aiImportMessage }}</p>
-                    <p v-if="aiImportTask" class="text-sm text-gray-600 mt-2">后台任务：{{ aiImportTask.status }}<span v-if="aiImportTask.questions">，已生成 {{ aiImportTask.questions }} 题</span></p>
-                </div>
-            </div>
-
             <div v-if="currentView === 'customCourseManager'">
                 <div class="guide-section">
                     <h3>自定义题库管理</h3>
-                    <p v-if="!customCourses.length">还没有自定义题库。可以先用“导入题库（粘贴 JSON）”或“AI API 导入题库”创建一个。</p>
+                    <p v-if="!customCourses.length">还没有自定义题库。可以先用“导入题库（粘贴 JSON）”创建一个。</p>
                     <div v-for="course in customCourses" :key="course.key" class="custom-course-row">
                         <span>{{ course.name }}<small>共 {{ course.question_count || 0 }} 题</small></span>
                         <button @click="openCustomCourseEditor(course)" class="btn btn-outline">编辑</button>
@@ -328,12 +285,12 @@
                     </ul>
                 </div>
                 <div class="guide-section">
-                    <h3>AI 题库服务</h3>
+                    <h3>AI 生成题库（外部）</h3>
                     <ul>
-                        <li>导入题库（粘贴 JSON）适合配合网页端 AI 使用：让 AI 输出 clean_outputs 兼容 JSON，然后直接粘贴导入。</li>
-                        <li>AI API 导入题库使用 OpenAI 兼容接口，可以填写 API Base URL、API 路径和模型；默认路径是 /chat/completions。</li>
-                        <li>两种导入方式都可以新建自定义题库，也可以导入到已有自定义题库的新章节，例如“自定义题库1”的“新一章选择题”。</li>
-                        <li>API Key 只用于本机请求，不会写进题库文件，也不会展示在页面日志里。</li>
+                        <li>本工具已移除内置 AI 接口。想要 AI 出题：在“导入题库（粘贴 JSON）”页面复制生成提示词。</li>
+                        <li>把提示词和你的学习材料一起发给任意 AI（网页版即可），它会返回题库 JSON。</li>
+                        <li>把返回的 JSON 粘贴导入为自定义题库，也可以导入到已有自定义题库的新章节。</li>
+                        <li>AI 生成的题目建议人工检查一遍再导入。</li>
                     </ul>
                 </div>
             </div>
