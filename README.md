@@ -70,32 +70,32 @@ JSON 导入支持标准数组格式，题目字段建议包含：
 
 1. 在 `clean_outputs/` 下新建一个目录，放入章节题目文件 `0.json`、`1.json`……每个文件是一个题目数组，格式如下：
 
-```json
-[
-  {
-    "question_number": "1",
-    "question_type": "单选题",
-    "question_text": "题干文本",
-    "options": {"A": "选项A", "B": "选项B", "C": "选项C", "D": "选项D"},
-    "correct_answer": "C"
-  }
-]
-```
+   ```json
+   [
+     {
+       "question_number": "1",
+       "question_type": "单选题",
+       "question_text": "题干文本",
+       "options": {"A": "选项A", "B": "选项B", "C": "选项C", "D": "选项D"},
+       "correct_answer": "C"
+     }
+   ]
+   ```
 
 2. 在同一目录放一个 `meta.json`：
 
-```json
-{
-  "key": "maogai_2026",
-  "name": "2026上毛概某某老师",
-  "max_chapter": 8
-}
-```
+   ```json
+   {
+     "key": "maogai_2026",
+     "name": "2026上毛概某某老师",
+     "max_chapter": 8
+   }
+   ```
 
-- `key`：题库唯一标识，只能用小写字母、数字、下划线和短横线。
-- `name`：界面上显示的名称。
-- `max_chapter`：最大章节号，**可省略**——省略时程序自动扫描 `0.json`、`1.json`… 直到缺文件为止。
-- `chapter_names`（可选）：章节名映射，如 `{"0": "导论"}`。
+   - `key`：题库唯一标识，只能用小写字母、数字、下划线和短横线。
+   - `name`：界面上显示的名称。
+   - `max_chapter`：最大章节号，**可省略**——省略时程序自动扫描 `0.json`、`1.json`… 直到缺文件为止。
+   - `chapter_names`（可选）：章节名映射，如 `{"0": "导论"}`。
 
 提交 PR 前跑一下 `go test ./...` 即可，程序启动时会自动发现并加载所有题库目录。
 
@@ -148,8 +148,8 @@ go build -o Meow-Politics-Helper .
 
 代码结构（重构后）：
 
-```
-main.go                  启动装配：内置题库清单、依赖组装、路由注册
+```text
+main.go                  启动装配：内置题库自动发现、依赖组装、路由注册
 internal/store/          用户数据持久化（路径校验、原子写入）
 internal/course/         题目/题库模型、课程注册表、JSON 导入解析、内置题库加载
 internal/quiz/           刷题业务：选题、服务端判分、错题本、统计
