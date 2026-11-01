@@ -63,12 +63,12 @@ type DeleteCustomCourseRequest struct {
 
 // SaveCustomCourseRequest 保存自定义题库编辑。
 type SaveCustomCourseRequest struct {
-	UserID       string                 `json:"user_id" vd:"required"`
-	Course       string                 `json:"course" vd:"required"`
-	CourseName   string                 `json:"course_name" vd:"required"`
-	ChapterNames map[string]string      `json:"chapter_names"`
+	UserID       string                       `json:"user_id" vd:"required"`
+	Course       string                       `json:"course" vd:"required"`
+	CourseName   string                       `json:"course_name" vd:"required"`
+	ChapterNames map[string]string            `json:"chapter_names"`
 	Chapters     map[string][]course.Question `json:"chapters"`
-	Questions    []course.Question      `json:"questions"`
+	Questions    []course.Question            `json:"questions"`
 }
 
 // NetworkAddress 是一个可访问的网络地址。
