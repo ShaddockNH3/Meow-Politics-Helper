@@ -67,6 +67,27 @@
                 };
                 const courses = ref([]);
                 const selectedCourse = ref('maogai'); // 默认选择毛概
+
+                // 错题回顾：答对后自动移出错题本（按用户记忆开关状态）
+                const autoDeleteStorageKey = (id = userId.value) => id ? `quizAppAutoDeleteIncorrect:${id}` : '';
+                const loadAutoDeleteIncorrect = () => {
+                    const key = autoDeleteStorageKey();
+                    if (!key) return false;
+                    try { return localStorage.getItem(key) === '1'; } catch (e) { return false; }
+                };
+                const autoDeleteIncorrect = ref(loadAutoDeleteIncorrect());
+                const syncAutoDeleteStorage = () => {
+                    try {
+                        const key = autoDeleteStorageKey();
+                        if (!key) return;
+                        if (autoDeleteIncorrect.value) localStorage.setItem(key, '1');
+                        else localStorage.removeItem(key);
+                    } catch (e) { /* localStorage 不可用时静默降级为会话内开关 */ }
+                };
+                const toggleAutoDeleteIncorrect = () => {
+                    autoDeleteIncorrect.value = !autoDeleteIncorrect.value;
+                    syncAutoDeleteStorage();
+                };
                 const availableChapters = computed(() => {
                     const course = courses.value.find(item => item.key === selectedCourse.value);
                     if (course?.custom) {
@@ -449,6 +470,7 @@
                             userId.value = data.user_id;
                             localStorage.setItem('quizAppUserId', userId.value);
                             refreshShortcutSettings();
+                            autoDeleteIncorrect.value = loadAutoDeleteIncorrect(); // 切换用户时重新读取开关
                             loadCourses();
                             loadSavedQuizState(); // Load quiz state for this user
                             inputUserId.value = ''; 
@@ -921,11 +943,30 @@
                             headers: { 'Content-Type': 'application/json' }, 
                             body: JSON.stringify(requestBody) 
                         })
-                        .then(response => { 
-                            if (!response.ok) { console.error(`服务器记录答案失败 (后台)`); } 
+                        .then(response => {
+                            if (!response.ok) { console.error(`服务器记录答案失败 (后台)`); }
                             else { console.log("答案已成功同步到服务器 (后台)。"); }
                         })
                         .catch(err => { console.error(`提交答案到服务器时发生网络错误 (后台): ${err.message}`); });
+
+                        // 错题回顾：开启开关且本次答对时，自动把该题移出错题本
+                        if (activeMode.value === 'incorrectReview' && isCurrentAnswerCorrect.value && autoDeleteIncorrect.value) {
+                            fetch(`${API_BASE_URL}/api/incorrect_questions/delete`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    user_id: userId.value,
+                                    course: currentQuestion.value.course || selectedCourse.value,
+                                    original_chapter: currentQuestion.value.original_chapter,
+                                    original_question_number: currentQuestion.value.original_question_number
+                                })
+                            })
+                            .then(response => {
+                                if (!response.ok) { console.error('自动移出错题本失败 (后台)'); }
+                                else { console.log('答对已自动移出错题本。'); }
+                            })
+                            .catch(err => { console.error(`自动移出错题本时网络错误: ${err.message}`); });
+                        }
                     } catch (err) { console.error(`准备提交答案到服务器时出错 (后台): ${err.message}`); } 
                 };
                                 
@@ -1114,6 +1155,7 @@
                     networkInfo, loadNetworkInfo, copyText, copyNetworkURLs, shortcutDraft, shortcutCapture, startShortcutCapture, isCapturingShortcut, saveShortcutSettings, resetShortcutSettings,
                     courses, availableChapters, courseDisplayName, selectedChapters, selectedOrder, selectedCourse,
                     defaultAISystemPrompt, jsonPromptCopied, jsonImportForm, jsonImportMessage, importJSONQuestionBank, copyJSONPrompt, customCourses, customEditor, customEditorChapterKeys, customEditorQuestions, openCustomCourseEditor, addEditorQuestion, removeEditorQuestion, addEditorChapter, deleteEditorChapter, saveCustomCourse, deleteCustomCourse,
+                    autoDeleteIncorrect, toggleAutoDeleteIncorrect,
                     activeMode, modeDisplayName,
                     allModeQuestions, currentQuestion, totalQuestions, originalTotalQuestions, isQuizCompleted, currentQuestionIndex,
                     selectedAnswers, quizModeState, feedbackMessage, isCurrentAnswerCorrect, quizResults,

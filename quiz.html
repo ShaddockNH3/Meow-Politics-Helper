@@ -273,6 +273,7 @@
                         <li>速刷模式会直接展示答案，适合考前快速过题。</li>
                         <li>答题模式会记录答题统计，答错的题会进入对应课程的错题本。</li>
                         <li>错题回顾会从错题本中抽题复习，也可以手动删除已经掌握的错题。</li>
+                        <li>错题回顾里可以开启「答对后自动移出错题本」，答对的题不再留在错题本。</li>
                     </ul>
                 </div>
                 <div class="guide-section">
@@ -361,6 +362,11 @@
             </div>
 
             <div v-if="currentQuestion && isInQuestionView">
+                <button v-if="currentView === 'incorrectReview'" @click="toggleAutoDeleteIncorrect"
+                        :class="autoDeleteIncorrect ? 'btn-secondary' : 'btn-outline'"
+                        class="btn btn-full-width">
+                    {{ autoDeleteIncorrect ? '✓ 答对后自动移出错题本：已开启' : '答对后自动移出错题本：未开启' }}
+                </button>
                 <div class="question-card">
                     <div class="question-info-bar">
                         <span class="font-semibold text-blue-600">{{ currentQuestion.question_type }}</span>
