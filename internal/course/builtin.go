@@ -5,44 +5,100 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// BuiltinSpec 描述一个内置题库的来源。
-type BuiltinSpec struct {
-	Key        string // 课程键，如 "maogai"
-	Name       string // 展示名，如 "2025上毛概康老师"
-	SourceDir  string // embed FS 内的目录，如 "clean_outputs/maogao_202506_kang_outputs"
-	MaxChapter int    // 最大章节号（章节文件为 <n>.json，从 0 开始）
+// bankKeyPattern 限制内置题库 key 只能是小写字母、数字、下划线和短横线。
+var bankKeyPattern = regexp.MustCompile(`^[a-z0-9_-]+$`)
+
+// BankMetaFile 是题库目录下 meta.json 的格式，也是给贡献者的唯一配置点。
+type BankMetaFile struct {
+	Key          string            `json:"key"`                     // 题库标识，如 "maogai"（小写字母/数字/下划线/短横线）
+	Name         string            `json:"name"`                    // 展示名，如 "2025上毛概康老师"
+	MaxChapter   *int              `json:"max_chapter,omitempty"`   // 最大章节号；留空则自动扫描 0.json、1.json… 直到缺文件为止
+	ChapterNames map[string]string `json:"chapter_names,omitempty"` // 可选：章节名映射 {"0": "导论", ...}
 }
 
-// LoadBuiltin 从文件系统加载内置题库并注册到 registry。
+// LoadBanksFromFS 扫描 fsys 中 root 目录下的每个子目录，
+// 读取其中的 meta.json 并加载题库（章节文件为 <章节号>.json，从 0 开始）。
+//
+// 新增内置题库无需改任何 Go 代码：在 clean_outputs/ 下新建目录，
+// 放入 meta.json 和编号的章节 JSON 文件即可（欢迎直接提 PR）。
 // 缺失或损坏的章节文件会被跳过（初始化为空章节），不阻塞启动。
-func LoadBuiltin(registry *Registry, fsys fs.FS, specs []BuiltinSpec) error {
-	for _, spec := range specs {
-		bank := &Bank{
-			Key:        spec.Key,
-			Name:       spec.Name,
-			MaxChapter: spec.MaxChapter,
-			Chapters:   make(map[string][]Question),
+func LoadBanksFromFS(registry *Registry, fsys fs.FS, root string) error {
+	entries, err := fs.ReadDir(fsys, root)
+	if err != nil {
+		return fmt.Errorf("无法读取题库目录 %s: %w", root, err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
 		}
-		for i := 0; i <= spec.MaxChapter; i++ {
-			chapterKey := strconv.Itoa(i)
-			// embed FS 统一使用正斜杠路径，不能用 filepath.Join
-			filePath := spec.SourceDir + "/" + chapterKey + ".json"
-			questions, err := loadChapterFile(fsys, filePath)
-			if err != nil {
-				log.Printf("提示：章节 %s (%s) 题库文件 %s 不可用，已跳过: %v", chapterKey, spec.Key, filePath, err)
-			}
-			assignChapterIndices(chapterKey, questions)
-			bank.Chapters[chapterKey] = questions
+		dirPath := root + "/" + entry.Name()
+		bank, err := loadBankDir(fsys, dirPath, entry.Name())
+		if err != nil {
+			log.Printf("跳过题库目录 %s: %v", dirPath, err)
+			continue
 		}
 		registry.Register(bank)
-		log.Printf("内置题库「%s」加载完成，共 %d 题", bank.Name, bank.QuestionCount())
+		log.Printf("内置题库「%s」加载完成，共 %d 题（%d 章）", bank.Name, bank.QuestionCount(), len(bank.Chapters))
 	}
 	return nil
+}
+
+func loadBankDir(fsys fs.FS, dirPath, dirName string) (*Bank, error) {
+	metaData, err := fs.ReadFile(fsys, dirPath+"/meta.json")
+	if err != nil {
+		return nil, fmt.Errorf("缺少 meta.json（每个题库目录必须有 meta.json 声明 key 和 name）: %w", err)
+	}
+	var meta BankMetaFile
+	if err := json.Unmarshal(metaData, &meta); err != nil {
+		return nil, fmt.Errorf("解析 meta.json 失败: %w", err)
+	}
+	meta.Key = strings.TrimSpace(meta.Key)
+	if !bankKeyPattern.MatchString(meta.Key) {
+		return nil, fmt.Errorf("meta.json 的 key %q 不合法（需为小写字母/数字/下划线/短横线）", meta.Key)
+	}
+	if strings.TrimSpace(meta.Name) == "" {
+		return nil, fmt.Errorf("meta.json 缺少 name")
+	}
+
+	chapters := make(map[string][]Question)
+	maxChapter := -1
+	if meta.MaxChapter != nil {
+		maxChapter = *meta.MaxChapter
+		if maxChapter < 0 {
+			return nil, fmt.Errorf("max_chapter 不能为负数")
+		}
+	} else {
+		// 自动扫描：从 0.json 开始，遇到第一个缺失的文件就停
+		maxChapter = detectMaxChapter(fsys, dirPath)
+		if maxChapter < 0 {
+			return nil, fmt.Errorf("目录中没有找到任何章节文件（0.json、1.json…）")
+		}
+	}
+
+	for i := 0; i <= maxChapter; i++ {
+		chapterKey := strconv.Itoa(i)
+		// embed FS 统一使用正斜杠路径，不能用 filepath.Join
+		questions, err := loadChapterFile(fsys, dirPath+"/"+chapterKey+".json")
+		if err != nil {
+			log.Printf("提示：题库 %s 章节 %s 文件不可用，已跳过: %v", meta.Key, chapterKey, err)
+		}
+		assignChapterIndices(chapterKey, questions)
+		chapters[chapterKey] = questions
+	}
+
+	return &Bank{
+		Key:          meta.Key,
+		Name:         meta.Name,
+		MaxChapter:   maxChapter,
+		ChapterNames: meta.ChapterNames,
+		Chapters:     chapters,
+	}, nil
 }
 
 func loadChapterFile(fsys fs.FS, filePath string) ([]Question, error) {
@@ -61,6 +117,15 @@ func assignChapterIndices(chapterKey string, questions []Question) {
 	for idx := range questions {
 		questions[idx].OriginalChapterKey = chapterKey
 		questions[idx].OriginalIndex = idx
+	}
+}
+
+// detectMaxChapter 逐个尝试章节文件，返回存在的最大章节号；一个都没有时返回 -1。
+func detectMaxChapter(fsys fs.FS, dirPath string) int {
+	for i := 0; ; i++ {
+		if _, err := fs.ReadFile(fsys, dirPath+"/"+strconv.Itoa(i)+".json"); err != nil {
+			return i - 1
+		}
 	}
 }
 

@@ -25,13 +25,6 @@ import (
 //go:embed clean_outputs/* quiz.html assets/*
 var embeddedFS embed.FS
 
-// builtinCourseSpecs 是内置题库清单。新增内置题库只需在这里加一行。
-var builtinCourseSpecs = []course.BuiltinSpec{
-	{Key: "maogai", Name: "2025上毛概康老师", SourceDir: "clean_outputs/maogao_202506_kang_outputs", MaxChapter: 8},
-	{Key: "xigai_li", Name: "2024下习概李老师", SourceDir: "clean_outputs/xigai_202412_li_outputs", MaxChapter: 0},
-	{Key: "xigai_yang", Name: "2025下习概杨老师", SourceDir: "clean_outputs/xigai_202512_yang_outputs", MaxChapter: 17},
-}
-
 func main() {
 	// 数据层
 	st := store.New("user_data")
@@ -39,9 +32,10 @@ func main() {
 		log.Fatalf("无法创建用户数据目录: %v", err)
 	}
 
-	// 题库层：内置题库（embed）+ 用户自定义题库共用一个注册表
+	// 题库层：从 clean_outputs/ 下的 meta.json 自动发现并加载内置题库，
+	// 与用户自定义题库共用一个注册表
 	registry := course.NewRegistry()
-	if err := course.LoadBuiltin(registry, embeddedFS, builtinCourseSpecs); err != nil {
+	if err := course.LoadBanksFromFS(registry, embeddedFS, "clean_outputs"); err != nil {
 		log.Fatalf("加载内置题库失败: %v", err)
 	}
 
