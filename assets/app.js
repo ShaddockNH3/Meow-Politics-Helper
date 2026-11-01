@@ -73,7 +73,10 @@
                 const loadAutoDeleteIncorrect = () => {
                     const key = autoDeleteStorageKey();
                     if (!key) return false;
-                    try { return localStorage.getItem(key) === '1'; } catch (e) { return false; }
+                    try {
+                        const stored = localStorage.getItem(key);
+                        return stored === null ? true : stored === '1'; // 默认开启
+                    } catch (e) { return true; }
                 };
                 const autoDeleteIncorrect = ref(loadAutoDeleteIncorrect());
                 const syncAutoDeleteStorage = () => {

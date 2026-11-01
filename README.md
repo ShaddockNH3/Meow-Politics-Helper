@@ -14,8 +14,8 @@
 
 ## 题库说明
 
-- 毛概选择题：题库来源于2025上半学年康老师，包含9个章节的选择题
-- 习概选择题：题库来源于2024下半学年李老师的题库，合计101道选择题，并新增来自2025下半学年杨老师的题目，合计269道选择题；章节划分为导论加17个章节（共18章节）。出题老师（仅列姓氏）包括林、王、阮、潘、杨、钱、罗、黄
+- 毛概选择题：题库来源于 2025 上半学年康老师，包含 9 个章节的选择题
+- 习概选择题：题库来源于 2024 下半学年李老师的题库，合计 101 道选择题，并新增来自 2025 下半学年杨老师的题目，合计 269 道选择题；章节划分为导论加 17 个章节（共 18 章节）。出题老师（仅列姓氏）包括林、王、阮、潘、杨、钱、罗、黄
 - 自定义
 
 ## 主要功能
@@ -34,11 +34,11 @@
 从 [Releases](https://github.com/ShaddockNH3/Meow-Politics-Helper/releases) 下载对应平台的可执行文件：
 
 - Windows：`Meow-Politics-Helper-windows-amd64.exe`
-- Windows ARM64：`Meow-Politics-Helper-windows-arm64.exe`
+- Windows ARM64:`Meow-Politics-Helper-windows-arm64.exe`
 - Linux：`Meow-Politics-Helper-linux-amd64`
-- Linux ARM64：`Meow-Politics-Helper-linux-arm64`
-- macOS Intel：`Meow-Politics-Helper-darwin-amd64`
-- macOS Apple Silicon：`Meow-Politics-Helper-darwin-arm64`
+- Linux ARM64:`Meow-Politics-Helper-linux-arm64`
+- macOS Intel:`Meow-Politics-Helper-darwin-amd64`
+- macOS Apple Silicon:`Meow-Politics-Helper-darwin-arm64`
 
 下载后直接运行即可。Windows 用户通常双击 `.exe`，程序启动后会自动打开浏览器页面。
 
@@ -58,7 +58,7 @@ JSON 导入支持标准数组格式，题目字段建议包含：
     "question_number": "AI-001",
     "question_type": "单选题",
     "question_text": "题干文本",
-    "options": {"A": "选项A", "B": "选项B", "C": "选项C", "D": "选项D"},
+    "options": {"A": "选项 A", "B": "选项 B", "C": "选项 C", "D": "选项 D"},
     "correct_answer": "A"
   }
 ]
@@ -76,7 +76,7 @@ JSON 导入支持标准数组格式，题目字段建议包含：
        "question_number": "1",
        "question_type": "单选题",
        "question_text": "题干文本",
-       "options": {"A": "选项A", "B": "选项B", "C": "选项C", "D": "选项D"},
+       "options": {"A": "选项 A", "B": "选项 B", "C": "选项 C", "D": "选项 D"},
        "correct_answer": "C"
      }
    ]
@@ -87,7 +87,7 @@ JSON 导入支持标准数组格式，题目字段建议包含：
    ```json
    {
      "key": "maogai_2026",
-     "name": "2026上毛概某某老师",
+     "name": "2026 上毛概某某老师",
      "max_chapter": 8
    }
    ```
@@ -115,7 +115,7 @@ JSON 导入支持标准数组格式，题目字段建议包含：
     "question_number": "AI-001",
     "question_type": "单选题",
     "question_text": "题干文本",
-    "options": {"A": "选项A", "B": "选项B", "C": "选项C", "D": "选项D"},
+    "options": {"A": "选项 A", "B": "选项 B", "C": "选项 C", "D": "选项 D"},
     "correct_answer": "A"
   }
 ]
