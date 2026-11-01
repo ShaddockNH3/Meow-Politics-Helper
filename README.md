@@ -31,16 +31,25 @@
 
 ## 快速开始
 
-从 [Releases](https://github.com/ShaddockNH3/Meow-Politics-Helper/releases) 下载对应平台的可执行文件：
+从 [Releases](https://github.com/ShaddockNH3/Meow-Politics-Helper/releases) 下载对应平台的文件：
 
-- Windows：`Meow-Politics-Helper-windows-amd64.exe`
-- Windows ARM64:`Meow-Politics-Helper-windows-arm64.exe`
-- Linux：`Meow-Politics-Helper-linux-amd64`
-- Linux ARM64:`Meow-Politics-Helper-linux-arm64`
-- macOS Intel:`Meow-Politics-Helper-darwin-amd64`
-- macOS Apple Silicon:`Meow-Politics-Helper-darwin-arm64`
+- Windows：`Meow-Politics-Helper-windows-amd64.exe`（双击运行）
+- Windows ARM64：`Meow-Politics-Helper-windows-arm64.exe`
+- Linux：`Meow-Politics-Helper-linux-amd64.zip`
+- Linux ARM64：`Meow-Politics-Helper-linux-arm64.zip`
+- macOS Intel：`Meow-Politics-Helper-darwin-amd64.zip`
+- macOS Apple Silicon：`Meow-Politics-Helper-darwin-arm64.zip`
 
-下载后直接运行即可。Windows 用户通常双击 `.exe`，程序启动后会自动打开浏览器页面。
+Windows 用户双击 `.exe` 即可。macOS / Linux 用户解压 zip 后在终端运行：
+
+```bash
+chmod +x Meow-Politics-Helper-darwin-arm64
+./Meow-Politics-Helper-darwin-arm64
+```
+
+> macOS 首次运行如果提示「无法打开，因为无法验证开发者」，执行 `xattr -d com.apple.quarantine Meow-Politics-Helper-darwin-arm64` 后再运行即可（本程序为开源本地工具，未购买 Apple 签名）。
+
+程序启动后会自动打开浏览器页面。
 
 ## 自定义题库
 

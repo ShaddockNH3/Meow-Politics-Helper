@@ -107,7 +107,23 @@ jobs:
           mkdir -p dist
           go build -trimpath -ldflags="-s -w" -o "dist/${{ matrix.artifact }}" .
 
+      # 非 Windows 平台打包成 zip：保留可执行权限，避免浏览器下载丢失 +x 导致无法直接运行
+      - name: Package binary (unix)
+        if: matrix.goos != 'windows'
+        run: |
+          set -euo pipefail
+          cd dist
+          zip "${{ matrix.artifact }}.zip" "${{ matrix.artifact }}"
+          rm "${{ matrix.artifact }}"
+
       - name: Upload asset to Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$RELEASE_TAG" "dist/${{ matrix.artifact }}" --clobber
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            ASSET="dist/${{ matrix.artifact }}"
+          else
+            ASSET="dist/${{ matrix.artifact }}.zip"
+          fi
+          gh release upload "$RELEASE_TAG" "$ASSET" --clobber
