@@ -73,10 +73,17 @@ func NewRegistry() *Registry {
 	return &Registry{banks: make(map[string]*Bank)}
 }
 
-// Register 注册或替换一个题库。
+// Register 注册或替换一个题库，并统一为每道题补齐章节键与章节内索引
+// （这两个字段是判分反查原题的依据，必须在注册时保证正确）。
 func (r *Registry) Register(bank *Bank) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	for chapterKey, questions := range bank.Chapters {
+		for idx := range questions {
+			questions[idx].OriginalChapterKey = chapterKey
+			questions[idx].OriginalIndex = idx
+		}
+	}
 	r.banks[bank.Key] = bank
 }
 
