@@ -338,6 +338,11 @@
                     <h3>选择错题题库</h3>
                     <p>错题本按当前课程单独保存。请先在主菜单选课程，再进入错题回顾。</p>
                     <p><strong>当前错题题库：</strong>{{ courseDisplayName }}</p>
+                    <button @click="toggleAutoDeleteIncorrect"
+                            :class="autoDeleteIncorrect ? 'btn-secondary' : 'btn-outline'"
+                            class="btn btn-full-width">
+                        {{ autoDeleteIncorrect ? '✓ 答对后自动移出错题本：已开启' : '答对后自动移出错题本：未开启' }}
+                    </button>
                 </div>
                 <div class="mb-6" v-if="activeMode !== 'incorrectReview'">
                     <label class="block text-gray-700 text-sm font-bold mb-2">题目顺序：</label>
@@ -362,11 +367,6 @@
             </div>
 
             <div v-if="currentQuestion && isInQuestionView">
-                <button v-if="currentView === 'incorrectReview'" @click="toggleAutoDeleteIncorrect"
-                        :class="autoDeleteIncorrect ? 'btn-secondary' : 'btn-outline'"
-                        class="btn btn-full-width">
-                    {{ autoDeleteIncorrect ? '✓ 答对后自动移出错题本：已开启' : '答对后自动移出错题本：未开启' }}
-                </button>
                 <div class="question-card">
                     <div class="question-info-bar">
                         <span class="font-semibold text-blue-600">{{ currentQuestion.question_type }}</span>
