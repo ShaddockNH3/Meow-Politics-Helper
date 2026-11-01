@@ -1,22 +1,74 @@
+// Meow-Politics-Helper：本地刷题工具（原"喵喵学习小助手"）。
+//
+// main 只负责装配：构建各层依赖、注册路由、打开浏览器、启动服务。
 package main
 
 import (
-	"context"
 	"embed"
+	"io/fs"
 	"log"
 	"os/exec"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
+
+	"quiz/internal/course"
+	"quiz/internal/httpapi"
+	"quiz/internal/quiz"
+	"quiz/internal/service"
+	"quiz/internal/session"
+	"quiz/internal/store"
 )
 
 //go:embed clean_outputs/* quiz.html assets/*
 var embeddedFS embed.FS
 
-// openBrowser 在服务器启动后打开浏览器
+// builtinCourseSpecs 是内置题库清单。新增内置题库只需在这里加一行。
+var builtinCourseSpecs = []course.BuiltinSpec{
+	{Key: "maogai", Name: "2025上毛概康老师", SourceDir: "clean_outputs/maogao_202506_kang_outputs", MaxChapter: 8},
+	{Key: "xigai_li", Name: "2024下习概李老师", SourceDir: "clean_outputs/xigai_202412_li_outputs", MaxChapter: 0},
+	{Key: "xigai_yang", Name: "2025下习概杨老师", SourceDir: "clean_outputs/xigai_202512_yang_outputs", MaxChapter: 17},
+}
+
+func main() {
+	// 数据层
+	st := store.New("user_data")
+	if err := st.EnsureDir(); err != nil {
+		log.Fatalf("无法创建用户数据目录: %v", err)
+	}
+
+	// 题库层：内置题库（embed）+ 用户自定义题库共用一个注册表
+	registry := course.NewRegistry()
+	if err := course.LoadBuiltin(registry, embeddedFS, builtinCourseSpecs); err != nil {
+		log.Fatalf("加载内置题库失败: %v", err)
+	}
+
+	// 业务层
+	quizSvc := &quiz.Service{Store: st}
+	banks := &service.BankService{Store: st, Registry: registry}
+	sessions := session.NewManager()
+	handlers := httpapi.NewHandlers(st, registry, quizSvc, banks, sessions)
+
+	// 装配服务
+	h := server.Default(server.WithHostPorts(httpapi.DefaultBindAddress))
+	httpapi.RegisterRoutes(h, embeddedFS, handlers)
+
+	log.Printf("喵喵学习小助手已启动，监听于 http://%s", httpapi.DefaultBindAddress)
+	for _, addr := range httpapi.DetectLANAddresses(httpapi.ServerPort(httpapi.DefaultBindAddress)) {
+		log.Printf("同一局域网可访问: %s (%s)", addr.URL, addr.Name)
+	}
+
+	go func() {
+		time.Sleep(1 * time.Second) // 等待服务启动
+		openBrowser("http://localhost:" + httpapi.ServerPort(httpapi.DefaultBindAddress))
+	}()
+
+	h.Spin()
+}
+
+// openBrowser 在服务启动后打开浏览器。
 func openBrowser(url string) {
 	var cmd string
 	var args []string
@@ -28,8 +80,7 @@ func openBrowser(url string) {
 	case "darwin":
 		cmd = "open"
 		args = []string{url}
-	default: // "linux", "freebsd", "openbsd", "netbsd"
-		// 检查是否在WSL环境中
+	default:
 		if isWSL() {
 			cmd = "cmd.exe"
 			args = []string{"/c", "start", url}
@@ -40,123 +91,18 @@ func openBrowser(url string) {
 	}
 
 	log.Printf("正在尝试打开浏览器: %s %v", cmd, args)
-	err := exec.Command(cmd, args...).Start()
-	if err != nil {
+	if err := exec.Command(cmd, args...).Start(); err != nil {
 		log.Printf("打开浏览器失败: %v", err)
 	}
 }
 
-// isWSL 检查是否在WSL环境中运行
+// isWSL 检查是否在 WSL 环境中运行。
 func isWSL() bool {
-	// 检查/proc/version文件是否包含WSL
 	if data, err := exec.Command("cat", "/proc/version").Output(); err == nil {
 		return strings.Contains(string(data), "WSL")
 	}
 	return false
 }
 
-// main函数，程序入口
-func main() {
-	// 使用默认配置初始化 Hertz 服务器，监听在 0.0.0.0:8899
-	h := server.Default(server.WithHostPorts(defaultBindAddress))
-
-	// 提供静态文件服务，使用嵌入的文件系统
-	h.GET("/", func(ctx context.Context, c *app.RequestContext) {
-		data, err := embeddedFS.ReadFile("quiz.html")
-		if err != nil {
-			c.String(404, "File not found")
-			return
-		}
-		c.Data(200, "text/html", data)
-	})
-	h.GET("/assets/:file", func(ctx context.Context, c *app.RequestContext) {
-		fileName := c.Param("file")
-		if strings.Contains(fileName, "/") || strings.Contains(fileName, "\\") || strings.Contains(fileName, "..") {
-			c.String(400, "Bad request")
-			return
-		}
-		data, err := embeddedFS.ReadFile("assets/" + fileName)
-		if err != nil {
-			c.String(404, "File not found")
-			return
-		}
-		contentType := "application/octet-stream"
-		if strings.HasSuffix(fileName, ".js") {
-			contentType = "application/javascript; charset=utf-8"
-		} else if strings.HasSuffix(fileName, ".css") {
-			contentType = "text/css; charset=utf-8"
-		}
-		c.Data(200, contentType, data)
-	})
-
-	// API 路由组
-	apiGroup := h.Group("/api")
-	{
-		apiGroup.GET("/network/info", NetworkInfoHandler)
-		apiGroup.GET("/courses", CoursesListHandler)
-		apiGroup.POST("/courses/delete", DeleteCustomCourseHandler)
-		apiGroup.POST("/courses/import-json", JSONImportQuestionBankHandler)
-		apiGroup.GET("/courses/custom/detail", CustomCourseDetailHandler)
-		apiGroup.POST("/courses/custom/save", SaveCustomCourseHandler)
-
-		sessionGroup := apiGroup.Group("/session")
-		{
-			// POST /api/session/init - 初始化用户会话 (现在需要 userID)
-			sessionGroup.POST("/init", InitSessionHandler)
-		}
-
-		reviewGroup := apiGroup.Group("/review") // 速刷模式相关
-		{
-			// POST /api/review/start - 开始速刷
-			reviewGroup.POST("/start", QuickReviewStartHandler)
-			// POST /api/review/next - 获取速刷下一题 (可能被前端优化掉)
-			reviewGroup.POST("/next", GetNextQuestionHandler)
-		}
-
-		quizGroup := apiGroup.Group("/quiz") // 答题模式相关
-		{
-			// POST /api/quiz/start - 开始答题
-			quizGroup.POST("/start", QuizStartHandler)
-			// POST /api/quiz/submit_answer - 提交答案
-			quizGroup.POST("/submit_answer", SubmitAnswerHandler)
-		}
-
-		incorrectGroup := apiGroup.Group("/incorrect_questions") // 错题回顾相关
-		{
-			// POST /api/incorrect_questions/review/start - 开始错题回顾
-			incorrectGroup.POST("/review/start", IncorrectQuestionsReviewStartHandler)
-			// POST /api/incorrect_questions/review/submit_answer - 提交错题回顾中的答案
-			incorrectGroup.POST("/review/submit_answer", SubmitIncorrectReviewAnswerHandler)
-			// POST /api/incorrect_questions/delete - 从错题本中删除一题
-			incorrectGroup.POST("/delete", DeleteIncorrectQuestionHandler)
-		}
-
-		userGroup := apiGroup.Group("/user") // 用户数据管理
-		{
-			// POST /api/user/data/clear - 清理用户数据
-			userGroup.POST("/data/clear", UserDataClearHandler)
-		}
-
-		aiGroup := apiGroup.Group("/ai")
-		{
-			aiGroup.GET("/config", AIConfigStatusHandler)
-			aiGroup.GET("/models", AIModelsHandler)
-			aiGroup.GET("/import/status", AIImportTaskStatusHandler)
-			aiGroup.POST("/config", SaveAIConfigHandler)
-			aiGroup.POST("/import", AIImportQuestionBankHandler)
-		}
-	}
-
-	log.Printf("喵喵学习小助手 Go 后端已启动，监听于 http://%s", defaultBindAddress)
-	for _, addr := range detectLANAddresses() {
-		log.Printf("同一局域网可访问: %s (%s)", addr.URL, addr.Name)
-	}
-
-	// 启动goroutine在服务器启动后打开浏览器
-	go func() {
-		time.Sleep(1 * time.Second) // 等待服务器启动
-		openBrowser("http://localhost:" + serverPort())
-	}()
-
-	h.Spin() // 启动服务器并开始监听请求
-}
+// 静态资源目录校验：确保 embed 的 assets 可被子文件系统访问。
+var _ fs.FS = embeddedFS

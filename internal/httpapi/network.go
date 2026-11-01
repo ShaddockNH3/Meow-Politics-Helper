@@ -1,4 +1,4 @@
-package main
+package httpapi
 
 import (
 	"context"
@@ -12,16 +12,33 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 )
 
-func serverPort() string {
-	parts := strings.Split(defaultBindAddress, ":")
+// DefaultBindAddress 是服务默认监听地址。
+const DefaultBindAddress = "0.0.0.0:8899"
+
+// ServerPort 从监听地址中取出端口。
+func ServerPort(bindAddress string) string {
+	parts := strings.Split(bindAddress, ":")
 	if len(parts) == 0 || parts[len(parts)-1] == "" {
 		return "8899"
 	}
 	return parts[len(parts)-1]
 }
 
-func detectLANAddresses() []NetworkAddress {
-	port := serverPort()
+// NetworkInfo 返回本机与局域网访问地址。
+func (h *Handlers) NetworkInfo(ctx context.Context, c *app.RequestContext) {
+	port := ServerPort(DefaultBindAddress)
+	lanURLs := DetectLANAddresses(port)
+	c.JSON(consts.StatusOK, utils.H{
+		"port":          port,
+		"local_url":     "http://localhost:" + port,
+		"lan_urls":      lanURLs,
+		"lan_url_count": len(lanURLs),
+		"hint":          "已列出检测到的所有可用 IPv4 网卡地址。手机和电脑连接同一个 Wi-Fi、热点或 VPN 后，在手机浏览器输入对应地址即可访问；若打不开，请检查系统防火墙是否允许本程序访问专用网络。",
+	})
+}
+
+// DetectLANAddresses 检测所有可用于局域网访问的 IPv4 地址。
+func DetectLANAddresses(port string) []NetworkAddress {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		log.Printf("检测局域网地址失败: %v", err)
@@ -46,14 +63,10 @@ func detectLANAddresses() []NetworkAddress {
 			case *net.IPAddr:
 				ip = v.IP
 			}
-			if ip == nil || ip.IsLoopback() {
+			if !isReachableIPv4(ip) {
 				continue
 			}
-			ipv4 := ip.To4()
-			if ipv4 == nil || !isReachableIPv4(ipv4) {
-				continue
-			}
-			ipText := ipv4.String()
+			ipText := ip.To4().String()
 			if seen[ipText] {
 				continue
 			}
@@ -75,19 +88,12 @@ func detectLANAddresses() []NetworkAddress {
 	return addresses
 }
 
-func NetworkInfoHandler(ctx context.Context, c *app.RequestContext) {
-	lanURLs := detectLANAddresses()
-	c.JSON(consts.StatusOK, utils.H{
-		"port":          serverPort(),
-		"local_url":     "http://localhost:" + serverPort(),
-		"lan_urls":      lanURLs,
-		"lan_url_count": len(lanURLs),
-		"hint":          "已列出检测到的所有可用 IPv4 网卡地址。手机和电脑连接同一个 Wi-Fi、热点或 VPN 后，在手机浏览器输入对应地址即可访问；若打不开，请检查系统防火墙是否允许本程序访问专用网络。",
-	})
-}
-
 func isReachableIPv4(ip net.IP) bool {
-	return ip != nil &&
+	if ip == nil {
+		return false
+	}
+	ipv4 := ip.To4()
+	return ipv4 != nil &&
 		!ip.IsUnspecified() &&
 		!ip.IsLoopback() &&
 		!ip.IsMulticast() &&
