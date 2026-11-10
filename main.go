@@ -22,7 +22,7 @@ import (
 	"quiz/internal/store"
 )
 
-//go:embed clean_outputs/* quiz.html assets/*
+//go:embed clean_outputs web/dist
 var embeddedFS embed.FS
 
 func main() {

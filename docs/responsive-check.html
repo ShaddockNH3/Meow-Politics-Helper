@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>断点验证 · 769 分界</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+    background: #e9edf3;
+    color: #1f2937;
+    padding: 0 0 40px;
+  }
+  .bar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    padding: 10px 16px;
+    background: #12243d; color: #e8eef7;
+    font-size: 13px;
+  }
+  .bar b { font-weight: 500; }
+  .badge {
+    padding: 2px 8px; border-radius: 4px; font-size: 12px;
+    background: #2f5580; color: #dbe8f7;
+  }
+  .badge.narrow { background: #7a5c1e; color: #fff4d6; }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    padding: 12px 16px; font-size: 12px; color: #5b6577;
+  }
+  .controls button {
+    padding: 5px 11px; border-radius: 6px; font-size: 12px; cursor: pointer;
+    border: 1px solid #c7cfdc; background: #fff; color: #374151;
+  }
+  .controls button:hover { border-color: #8c9bb0; }
+  .controls button.on { background: #1f3f66; border-color: #1f3f66; color: #fff; }
+  .stage {
+    margin: 0 auto; background: #f4f6fa; border-radius: 10px;
+    border: 1px solid #dde3ec; padding: 14px; transition: width .18s ease;
+  }
+  .app { padding: 16px; background: #f4f6fa; border-radius: 8px; }
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .brand { font-size: 16px; font-weight: 500; color: #12243d; }
+  .user { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7280; }
+  .dot { width: 20px; height: 20px; border-radius: 50%; background: #1f3f66; }
+  .label { font-size: 12px; color: #6b7280; margin-bottom: 8px; }
+  .courses { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card {
+    background: #fff; border: 1px solid #e5e9f0; border-radius: 8px;
+    padding: 12px; font-size: 13px; color: #374151;
+  }
+  .card.sel { border-color: #1f3f66; color: #12243d; }
+  .card .n { display: inline-block; margin-top: 6px; font-size: 12px; color: #8a93a5; background: #f1f3f7; border-radius: 3px; padding: 1px 6px; }
+  .card.sel .n { color: #1f3f66; background: #e8eef7; }
+  .card.add { border-style: dashed; display: flex; align-items: center; justify-content: center; color: #8a93a5; }
+  .modes { margin-top: 16px; }
+  .mode { background: #fff; border: 1px solid #e5e9f0; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+  .mode.sel { background: #1f3f66; border-color: #1f3f66; }
+  .mode .t { font-size: 13px; font-weight: 500; color: #12243d; }
+  .mode.sel .t { color: #fff; }
+  .mode .d { font-size: 12px; color: #8a93a5; margin-top: 3px; }
+  .mode.sel .d { color: #b9c9dd; }
+  .entries { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .entry { background: #fff; border: 1px solid #e5e9f0; border-radius: 8px; padding: 10px; text-align: center; font-size: 12px; color: #374151; }
+  .layout { display: block; }
+  .wide .layout { display: flex; gap: 16px; align-items: flex-start; }
+  .wide .col-courses { flex: 1.25; min-width: 0; }
+  .wide .col-modes { flex: 1; min-width: 0; }
+  .wide .modes { margin-top: 0; }
+  .narrow .col-courses { margin-bottom: 16px; }
+  .narrow .entries { grid-template-columns: 1fr 1fr; }
+  .hint { max-width: 1120px; margin: 14px auto 0; padding: 0 16px; font-size: 12px; color: #6b7280; line-height: 1.7; }
+  .warn { color: #a3402f; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span>模拟宽度 <b id="w">750</b> px</span>
+    <span id="zone" class="badge narrow">窄屏 · 单列</span>
+    <span class="badge">断点 768</span>
+    <span>真实视口 <b id="vw">–</b> px</span>
+    <span id="overflow" style="display:none" class="warn">检测到横向溢出</span>
+  </div>
+
+  <div class="controls">
+    <span>切一档：</span>
+    <button data-w="390">390 手机</button>
+    <button data-w="750">750 你的窗口</button>
+    <button data-w="768">768 分界</button>
+    <button data-w="800">800</button>
+    <button data-w="1120">1120 容器上限</button>
+    <button data-w="1440">1440</button>
+    <span style="margin-left:8px">也可以直接拖浏览器窗口边缘</span>
+  </div>
+
+  <div id="stage" class="stage narrow" style="width:750px">
+    <div class="app">
+      <div class="top">
+        <div class="brand">喵喵学习小助手</div>
+        <div class="user"><div class="dot"></div><span>catLover123</span></div>
+      </div>
+      <div class="layout">
+        <div class="col-courses">
+          <div class="label">选择课程</div>
+          <div class="courses">
+            <div class="card sel">2025上毛概康老师<span class="n">679 题</span></div>
+            <div class="card">2024下习概李老师<span class="n">101 题</span></div>
+            <div class="card">2025下习概杨老师<span class="n">269 题</span></div>
+            <div class="card add">+ 自定义题库</div>
+          </div>
+        </div>
+        <div class="col-modes">
+          <div class="label">选择学习模式</div>
+          <div class="modes">
+            <div class="mode sel"><div class="t">速刷模式</div><div class="d">看题 + 答案，考前过一遍</div></div>
+            <div class="mode"><div class="t">答题模式</div><div class="d">记录统计，答错进错题本</div></div>
+            <div class="mode"><div class="t">错题回顾</div><div class="d">只刷错过的题</div></div>
+          </div>
+          <div class="entries">
+            <div class="entry">导入题库</div>
+            <div class="entry">手机访问</div>
+            <div class="entry">题库管理</div>
+            <div class="entry">设置</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint">
+    超过 768 变双栏，小于等于 768 是单列。真实视口很宽时，模拟宽度会被限制在视口内，想看大宽度请拖窗口或全屏。
+  </div>
+
+<script>
+  var stage = document.getElementById('stage');
+  var wEl = document.getElementById('w');
+  var vwEl = document.getElementById('vw');
+  var zoneEl = document.getElementById('zone');
+  var overflowEl = document.getElementById('overflow');
+  var buttons = document.querySelectorAll('.controls button');
+  var target = 750;
+
+  function render() {
+    var viewport = window.innerWidth;
+    var width = Math.min(target, viewport - 32);
+    stage.style.width = width + 'px';
+    stage.classList.toggle('wide', width > 768);
+    stage.classList.toggle('narrow', width <= 768);
+    wEl.textContent = width;
+    vwEl.textContent = viewport;
+    zoneEl.textContent = width > 768 ? '宽屏 · 双栏' : '窄屏 · 单列';
+    zoneEl.className = width > 768 ? 'badge' : 'badge narrow';
+    var overflow = document.documentElement.scrollWidth > window.innerWidth + 1;
+    overflowEl.style.display = overflow ? 'inline' : 'none';
+    buttons.forEach(function (b) {
+      b.classList.toggle('on', Number(b.dataset.w) === target);
+    });
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      target = Number(b.dataset.w);
+      render();
+    });
+  });
+
+  window.addEventListener('resize', render);
+  render();
+</script>
+</body>
+</html>

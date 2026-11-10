@@ -35,6 +35,19 @@ jobs:
           go-version: 'stable'
           cache: true
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build frontend
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
       - name: Run tests
         run: go test ./...
 
@@ -96,6 +109,19 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build frontend
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
 
       - name: Build binary
         env:

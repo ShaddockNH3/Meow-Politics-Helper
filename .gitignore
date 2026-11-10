@@ -5,6 +5,11 @@ quiz-*.exe
 quiz-*
 Meow-Politics-Helper*.exe
 
+# 前端
+web/node_modules/
+web/dist/
+web/.vite/
+
 # 用户数据
 user_data/
 
