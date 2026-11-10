@@ -9,13 +9,32 @@
 - 📊 详细的答题统计和错题管理
 - 💾 本地数据持久化，支持多用户
 - 🚀 单文件部署，跨平台支持
-- 🌐 响应式 Web 界面
+- 🌐 响应式 Web 界面（宽屏双栏 / 窄屏单列 / 手机贴底操作）
 - 🐱 萌化的界面设计和交互体验
+
+## 界面预览
+
+主菜单：宽屏把课程和模式并排，一屏就能选完。
+
+![主菜单](docs/screenshots/home.png)
+
+答题页：左边做题，右边挂进度和跳题面板。
+
+![答题页](docs/screenshots/quiz.png)
+
+手机端：宽度小于 768 自动切单列，操作按钮贴底。
+
+<img src="docs/screenshots/mobile.png" width="300" alt="手机端界面" />
+自定义题库编辑器：
+
+![题库编辑器](docs/screenshots/editor.png)
 
 ## 题库说明
 
 - 毛概选择题：题库来源于 2025 上半学年康老师，包含 9 个章节的选择题
-- 习概选择题：题库来源于 2024 下半学年李老师的题库，合计 101 道选择题，并新增来自 2025 下半学年杨老师的题目，合计 269 道选择题；章节划分为导论加 17 个章节（共 18 章节）。出题老师（仅列姓氏）包括林、王、阮、潘、杨、钱、罗、黄
+- 习概选择题：题库来源于 2024 下半学年李老师的题库，合计 101 道选择题，
+  并新增来自 2025 下半学年杨老师的题目，合计 269 道选择题；
+  章节划分为导论加 17 个章节（共 18 章节），出题老师（仅列姓氏）包括林、王、阮、潘、杨、钱、罗、黄
 - 自定义
 
 ## 主要功能
@@ -47,7 +66,9 @@ chmod +x Meow-Politics-Helper-darwin-arm64
 ./Meow-Politics-Helper-darwin-arm64
 ```
 
-> macOS 首次运行如果提示「无法打开，因为无法验证开发者」，执行 `xattr -d com.apple.quarantine Meow-Politics-Helper-darwin-arm64` 后再运行即可（本程序为开源本地工具，未购买 Apple 签名）。
+> macOS 首次运行如果提示「无法打开，因为无法验证开发者」，先执行
+> `xattr -d com.apple.quarantine Meow-Politics-Helper-darwin-arm64`
+> 再运行即可（本程序为开源本地工具，未购买 Apple 签名）。
 
 程序启动后会自动打开浏览器页面。
 
@@ -148,17 +169,33 @@ AI 生成的题目建议人工检查后再导入。
 
 ## 开发构建
 
-需要 Go 1.24+ 环境。
+需要 Go 1.24+ 和 Node.js 20+。
 
 ```bash
+make build      # 先构建前端（web/dist），再编译 Go 二进制
+make test       # 只跑 Go 测试（需要先构建过前端）
+make dev        # 前端开发服务器，/api 自动代理到 8899
+```
+
+手动等价命令：
+
+```bash
+cd web && npm install && npm run build && cd ..
 go test ./...
 go build -o Meow-Politics-Helper .
 ```
 
-代码结构（重构后）：
+前端是 Vue 3 + Vite + Naive UI，构建产物在 `web/dist/`，由 `go:embed` 打进二进制——所以**改前端后必须重新构建前端再编译 Go**，否则跑的还是旧页面。
+
+代码结构：
 
 ```text
 main.go                  启动装配：内置题库自动发现、依赖组装、路由注册
+web/                     前端工程（Vue 3 + Vite + Naive UI）
+  src/views/             页面：主菜单、答题、题库编辑器等
+  src/components/        AppShell 等外壳组件
+  src/stores/app.js      全局状态与业务动作
+  src/api.js             接口封装
 internal/store/          用户数据持久化（路径校验、原子写入）
 internal/course/         题目/题库模型、课程注册表、JSON 导入解析、内置题库加载
 internal/quiz/           刷题业务：选题、服务端判分、错题本、统计
