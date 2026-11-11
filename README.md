@@ -14,17 +14,22 @@
 
 ## 界面预览
 
-主菜单：宽屏把课程和模式并排，一屏就能选完。
+主菜单（宽屏）：课程和模式并排，一屏就能选完。
 
 ![主菜单](docs/screenshots/home.png)
 
-答题页：左边做题，右边挂进度和跳题面板。
+答题页（宽屏）：左边做题，右边挂进度和跳题面板。
 
 ![答题页](docs/screenshots/quiz.png)
 
-手机端：宽度小于 768 自动切单列，操作按钮贴底。
+窄屏（约 700px，落在 768 断点以下）：课程和模式改为上下堆叠，宽度仍够放两列卡片。
+
+![窄屏界面](docs/screenshots/narrow.png)
+
+手机（390px）：单列布局，操作按钮贴底。
 
 <img src="docs/screenshots/mobile.png" width="300" alt="手机端界面" />
+
 自定义题库编辑器：
 
 ![题库编辑器](docs/screenshots/editor.png)

@@ -58,25 +58,34 @@ body {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
   letter-spacing: 0.2px;
 }
 
-.brand-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  background: var(--primary);
+.brand-icon {
+  color: var(--primary);
+  flex: 0 0 auto;
+}
+
+.gh-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 13px;
-  line-height: 1;
-  margin-right: 8px;
-  vertical-align: middle;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--faint);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.gh-link:hover {
+  color: var(--primary);
+  background: rgba(31, 63, 102, 0.06);
 }
 
 .topbar-right {
@@ -146,6 +155,7 @@ body {
 .course-add {
   border-style: dashed !important;
   display: flex;
+  grid-column: 1 / -1;
 }
 
 .course-add .add-inner {
