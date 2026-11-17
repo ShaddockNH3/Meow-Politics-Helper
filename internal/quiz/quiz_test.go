@@ -93,3 +93,22 @@ func TestToOutputIDs(t *testing.T) {
 		t.Fatalf("ToOutput 结果不正确: %+v", output)
 	}
 }
+
+// 不定项：答案可能一个也可能多个字母，判分与顺序、大小写、空格无关。
+func TestIsCorrectIndefinite(t *testing.T) {
+	q := course.Question{QuestionType: "不定项", CorrectAnswer: "AC"}
+	cases := map[string]bool{
+		"AC":  true,
+		"CA":  true,
+		"ac":  true,
+		"A C": true,
+		"A":   false,
+		"ABC": false,
+		"":    false,
+	}
+	for answer, want := range cases {
+		if got := IsCorrect(q, answer); got != want {
+			t.Errorf("不定项 IsCorrect(%q) = %v, 期望 %v", answer, got, want)
+		}
+	}
+}

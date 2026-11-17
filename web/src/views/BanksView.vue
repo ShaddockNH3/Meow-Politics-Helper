@@ -52,25 +52,41 @@ async function remove(course) {
     </div>
 
     <n-card size="small">
-      <div v-if="!banks.length" class="empty-hint">
-        还没有自定义题库。可以在「导入题库」里粘贴 JSON，或者复制提示词让 AI 生成后再导入。
-      </div>
-      <div v-for="course in banks" :key="course.key" class="bank-row">
-        <div>
-          <div class="course-name">{{ course.name }}</div>
-          <div class="mode-desc">
-            {{ course.max_chapter + 1 }} 章 · {{ course.question_count }} 题
-          </div>
-        </div>
-        <n-button size="tiny" quaternary :disabled="busy === course.key" @click="edit(course)">
-          <template #icon><Pencil :size="13" :stroke-width="1.8" /></template>
-          编辑
-        </n-button>
-        <n-button size="tiny" quaternary type="error" :loading="busy === course.key" @click="remove(course)">
-          <template #icon><Trash2 :size="13" :stroke-width="1.8" /></template>
-          删除
-        </n-button>
-      </div>
+      <n-empty v-if="!banks.length" description="还没有自定义题库">
+        <template #extra>
+          <n-text depth="3" style="font-size: 12px">
+            可以在「导入题库」里粘贴 JSON，或者复制提示词让 AI 生成后再导入。
+          </n-text>
+        </template>
+      </n-empty>
+
+      <n-list v-else hoverable clickable>
+        <n-list-item v-for="course in banks" :key="course.key">
+          <n-thing :title="course.name">
+            <template #description>
+              {{ course.max_chapter + 1 }} 章 · {{ course.question_count }} 题
+            </template>
+          </n-thing>
+          <template #suffix>
+            <n-space :size="4">
+              <n-button size="tiny" quaternary :disabled="busy === course.key" @click.stop="edit(course)">
+                <template #icon><Pencil :size="13" :stroke-width="1.8" /></template>
+                编辑
+              </n-button>
+              <n-button
+                size="tiny"
+                quaternary
+                type="error"
+                :loading="busy === course.key"
+                @click.stop="remove(course)"
+              >
+                <template #icon><Trash2 :size="13" :stroke-width="1.8" /></template>
+                删除
+              </n-button>
+            </n-space>
+          </template>
+        </n-list-item>
+      </n-list>
     </n-card>
   </div>
 </template>

@@ -157,7 +157,7 @@ async function save() {
       />
 
       <div v-if="currentList.length" class="question-list">
-        <div v-for="(question, index) in currentList" :key="index" class="question-editor">
+        <n-card v-for="(question, index) in currentList" :key="index" size="small" embedded class="question-editor">
           <div class="q-head">
             <n-input v-model:value="question.question_number" size="tiny" placeholder="题号" style="width: 80px" />
             <n-select
@@ -166,6 +166,7 @@ async function save() {
               :options="[
                 { label: '单选题', value: '单选题' },
                 { label: '多选题', value: '多选题' },
+                { label: '不定项', value: '不定项' },
               ]"
               style="width: 96px"
             />
@@ -208,7 +209,7 @@ async function save() {
               style="width: 110px"
             />
           </div>
-        </div>
+        </n-card>
       </div>
       <div v-else class="empty-hint" style="padding: 16px 0">这个章节还没有题目。</div>
 
@@ -240,6 +241,10 @@ async function save() {
 
 .question-list {
   margin-top: 14px;
+}
+
+.question-editor {
+  margin-bottom: 10px;
 }
 
 .q-head {

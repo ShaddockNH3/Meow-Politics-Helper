@@ -108,9 +108,14 @@ func NormalizeQuestionList(questions []Question) ([]Question, error) {
 		if q.QuestionNumber == "" {
 			q.QuestionNumber = fmt.Sprintf("IMPORT-%03d", i+1)
 		}
-		if len([]rune(q.CorrectAnswer)) > 1 {
+		// 题型归一：保留「不定项」（答案可能一个也可能多个），
+		// 其余按是否多选 / 答案长度判断，避免脏数据把多答案题当单选。
+		switch {
+		case strings.Contains(q.QuestionType, "不定项"):
+			q.QuestionType = "不定项"
+		case strings.Contains(q.QuestionType, "多选") || len([]rune(q.CorrectAnswer)) > 1:
 			q.QuestionType = "多选题"
-		} else if q.QuestionType != "多选题" {
+		default:
 			q.QuestionType = "单选题"
 		}
 		cleaned = append(cleaned, q)

@@ -33,6 +33,17 @@ const custom = computed(() => customCourseList())
 
 const modeIcons = { zap: Zap, pen: PenLine, rotate: RotateCcw }
 
+const gridBreakpoints = { xs: 0, s: 481, m: 769, l: 1025, xl: 1281, '2xl': 1537 }
+
+const entries = [
+  { key: 'import', label: '导入题库', icon: Upload, action: () => setView('import') },
+  { key: 'network', label: '手机访问', icon: Smartphone, action: () => setView('network') },
+  { key: 'guide', label: '使用指南', icon: BookOpen, action: () => setView('guide') },
+  { key: 'banks', label: '题库管理', icon: Library, action: () => setView('banks') },
+  { key: 'shortcuts', label: '快捷键', icon: Keyboard, action: () => setView('shortcuts') },
+  { key: 'settings', label: '设置', icon: Settings, action: () => setView('settings') },
+]
+
 onMounted(async () => {
   try {
     await refreshCourses()
@@ -47,10 +58,6 @@ function chapterSummary(course) {
   return `${list.length} 章 · ${course.question_count} 题`
 }
 
-function openBanks() {
-  setView('banks')
-}
-
 function continueLast() {
   if (!resumeQuiz()) message.info('没有可继续的答题记录')
 }
@@ -60,42 +67,51 @@ function continueLast() {
   <div class="home-grid">
     <section>
       <p class="section-title">选择课程</p>
-      <div class="course-grid">
-        <n-card
-          v-for="course in builtin"
-          :key="course.key"
-          size="small"
-          hoverable
-          class="card-click course-card"
-          :class="{ 'is-active': state.selectedCourse === course.key }"
-          @click="selectCourse(course.key)"
-        >
-          <div class="course-name">{{ course.name }}</div>
-          <div class="course-meta">
-            <n-tag size="small" :bordered="false" :type="state.selectedCourse === course.key ? 'info' : 'default'">
-              {{ chapterSummary(course) }}
-            </n-tag>
-          </div>
-        </n-card>
-        <n-card
-          v-for="course in custom"
-          :key="course.key"
-          size="small"
-          hoverable
-          class="card-click course-card"
-          :class="{ 'is-active': state.selectedCourse === course.key }"
-          @click="selectCourse(course.key)"
-        >
-          <div class="course-name">{{ course.name }}</div>
-          <div class="course-meta">
-            <n-tag size="small" :bordered="false" type="warning">自定义</n-tag>
-            <n-tag size="small" :bordered="false">{{ course.question_count }} 题</n-tag>
-          </div>
-        </n-card>
-        <n-card size="small" hoverable class="card-click course-card course-add" @click="setView('import')">
-          <div class="add-inner">+ 新建自定义题库</div>
-        </n-card>
-      </div>
+      <n-grid
+        :cols="'1 s:2'"
+        :breakpoints="gridBreakpoints"
+        :x-gap="10"
+        :y-gap="10"
+        responsive="screen"
+        item-responsive
+      >
+        <n-gi v-for="course in builtin" :key="course.key">
+          <n-card
+            size="small"
+            hoverable
+            class="card-click course-card"
+            :class="{ 'is-active': state.selectedCourse === course.key }"
+            @click="selectCourse(course.key)"
+          >
+            <div class="course-name">{{ course.name }}</div>
+            <div class="course-meta">
+              <n-tag size="small" :bordered="false" :type="state.selectedCourse === course.key ? 'info' : 'default'">
+                {{ chapterSummary(course) }}
+              </n-tag>
+            </div>
+          </n-card>
+        </n-gi>
+        <n-gi v-for="course in custom" :key="course.key">
+          <n-card
+            size="small"
+            hoverable
+            class="card-click course-card"
+            :class="{ 'is-active': state.selectedCourse === course.key }"
+            @click="selectCourse(course.key)"
+          >
+            <div class="course-name">{{ course.name }}</div>
+            <div class="course-meta">
+              <n-tag size="small" :bordered="false" type="warning">自定义</n-tag>
+              <n-tag size="small" :bordered="false">{{ course.question_count }} 题</n-tag>
+            </div>
+          </n-card>
+        </n-gi>
+        <n-gi :span="'1 s:2'">
+          <n-card size="small" hoverable class="card-click course-card course-add" @click="setView('import')">
+            <div class="add-inner">+ 新建自定义题库</div>
+          </n-card>
+        </n-gi>
+      </n-grid>
       <div v-if="!builtin.length && !custom.length" class="empty-hint" style="margin-top: 10px">
         暂时没有可用题库，稍等一下或刷新页面。
       </div>
@@ -117,47 +133,38 @@ function continueLast() {
         </div>
       </n-alert>
 
-      <div class="mode-stack">
-        <n-card
-          v-for="mode in MODES"
-          :key="mode.key"
-          size="small"
-          hoverable
-          class="card-click"
-          @click="chooseMode(mode.key)"
-        >
-          <div class="mode-card">
-            <span class="mode-icon">
-              <component :is="modeIcons[mode.icon]" :size="17" :stroke-width="1.7" />
-            </span>
-            <div>
-              <div class="mode-title">{{ mode.name }}</div>
-              <div class="mode-desc">{{ mode.desc }}</div>
-            </div>
-          </div>
-        </n-card>
-      </div>
+      <n-grid :cols="1" :y-gap="10">
+        <n-gi v-for="mode in MODES" :key="mode.key">
+          <n-card size="small" hoverable class="card-click" @click="chooseMode(mode.key)">
+            <n-space align="center" :size="12">
+              <n-icon :size="18" :component="modeIcons[mode.icon]" color="#1f3f66" />
+              <div>
+                <n-text strong>{{ mode.name }}</n-text>
+                <div class="mode-desc">{{ mode.desc }}</div>
+              </div>
+            </n-space>
+          </n-card>
+        </n-gi>
+      </n-grid>
 
-      <div class="entry-grid">
-        <div class="entry-tile" @click="setView('import')">
-          <Upload :size="15" :stroke-width="1.7" />导入题库
-        </div>
-        <div class="entry-tile" @click="setView('network')">
-          <Smartphone :size="15" :stroke-width="1.7" />手机访问
-        </div>
-        <div class="entry-tile" @click="setView('guide')">
-          <BookOpen :size="15" :stroke-width="1.7" />使用指南
-        </div>
-        <div class="entry-tile" @click="openBanks">
-          <Library :size="15" :stroke-width="1.7" />题库管理
-        </div>
-        <div class="entry-tile" @click="setView('shortcuts')">
-          <Keyboard :size="15" :stroke-width="1.7" />快捷键
-        </div>
-        <div class="entry-tile" @click="setView('settings')">
-          <Settings :size="15" :stroke-width="1.7" />设置
-        </div>
-      </div>
+      <n-grid
+        :cols="'2 s:2 m:3'"
+        :breakpoints="gridBreakpoints"
+        :x-gap="10"
+        :y-gap="10"
+        responsive="screen"
+        item-responsive
+        style="margin-top: 16px"
+      >
+        <n-gi v-for="entry in entries" :key="entry.key">
+          <n-card size="small" hoverable class="card-click" @click="entry.action">
+            <n-space align="center" :size="8">
+              <n-icon :size="15" :component="entry.icon" color="#8a93a5" />
+              <n-text>{{ entry.label }}</n-text>
+            </n-space>
+          </n-card>
+        </n-gi>
+      </n-grid>
     </section>
   </div>
 </template>

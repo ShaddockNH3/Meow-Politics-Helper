@@ -7,6 +7,13 @@ export const MODES = [
   { key: 'incorrectReview', name: '错题回顾', desc: '只刷答错过的题，答对可自动移出', icon: 'rotate' },
 ]
 
+// 是否允许多选：多选题、不定项都按checkbox 渲染。
+// 题库里存在 "多选题" / "不定项" 两种写法，不能只比对 "多选题"。
+export function isMultiChoice(type) {
+  const text = String(type || '')
+  return text.includes('多选') || text.includes('不定项')
+}
+
 const USER_KEY = 'quizAppUserId'
 const autoDeleteKey = (id) => `quizAppAutoDeleteIncorrect:${id}`
 const sessionKey = (id) => `quizAppSession:${id}`
@@ -284,7 +291,7 @@ export function pickOption(key) {
   if (state.revealed || state.mode === 'quickReview') return
   const question = currentQuestion.value
   if (!question) return
-  if (question.question_type === '多选题') {
+  if (isMultiChoice(question.question_type)) {
     const i = state.selections.indexOf(key)
     if (i >= 0) state.selections.splice(i, 1)
     else state.selections.push(key)

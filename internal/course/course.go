@@ -15,7 +15,7 @@ import (
 // Question 是一道选择题的完整数据。
 type Question struct {
 	QuestionNumber     string            `json:"question_number"`
-	QuestionType       string            `json:"question_type"` // "单选题" 或 "多选题"
+	QuestionType       string            `json:"question_type"` // "单选题" / "多选题" / "不定项"
 	QuestionText       string            `json:"question_text"`
 	Options            map[string]string `json:"options"`
 	CorrectAnswer      string            `json:"correct_answer"` // 如 "A" 或 "AB"

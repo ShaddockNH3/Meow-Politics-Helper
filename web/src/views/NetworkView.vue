@@ -44,26 +44,36 @@ onMounted(load)
     </div>
 
     <n-card v-if="state.networkInfo" size="small">
-      <div class="url-row">
-        <span class="url-label">本机</span>
-        <span class="url-text mono">{{ state.networkInfo.local_url }}</span>
-        <n-button size="tiny" quaternary @click="copy(state.networkInfo.local_url)">
-          <template #icon><Copy :size="13" :stroke-width="1.8" /></template>
-        </n-button>
-      </div>
-      <div v-for="(item, index) in state.networkInfo.lan_urls" :key="item.url" class="url-row">
-        <span class="url-label">网卡 {{ index + 1 }}</span>
-        <span class="url-text mono">
-          {{ item.url }}
-          <small>{{ item.name }}</small>
-        </span>
-        <n-button size="tiny" quaternary @click="copy(item.url)">
-          <template #icon><Copy :size="13" :stroke-width="1.8" /></template>
-        </n-button>
-      </div>
-      <p v-if="!state.networkInfo.lan_urls?.length" class="empty-hint" style="margin-top: 10px">
+      <n-list hoverable>
+        <n-list-item>
+          <n-thing title="本机地址">
+            <template #description>
+              <n-text code>{{ state.networkInfo.local_url }}</n-text>
+            </template>
+          </n-thing>
+          <template #suffix>
+            <n-button size="tiny" quaternary @click="copy(state.networkInfo.local_url)">
+              <template #icon><Copy :size="13" :stroke-width="1.8" /></template>
+            </n-button>
+          </template>
+        </n-list-item>
+        <n-list-item v-for="(item, index) in state.networkInfo.lan_urls" :key="item.url">
+          <n-thing :title="`网卡 ${index + 1}`">
+            <template #description>
+              <n-text code>{{ item.url }}</n-text>
+              <n-text depth="3" style="margin-left: 8px; font-size: 12px">{{ item.name }}</n-text>
+            </template>
+          </n-thing>
+          <template #suffix>
+            <n-button size="tiny" quaternary @click="copy(item.url)">
+              <template #icon><Copy :size="13" :stroke-width="1.8" /></template>
+            </n-button>
+          </template>
+        </n-list-item>
+      </n-list>
+      <n-alert v-if="!state.networkInfo.lan_urls?.length" type="warning" :bordered="false" style="margin-top: 10px">
         暂时没检测到可用的局域网 IPv4 地址，确认电脑已连 Wi-Fi、有线局域网或热点。
-      </p>
+      </n-alert>
       <p class="empty-hint" style="margin-top: 12px">{{ state.networkInfo.hint }}</p>
     </n-card>
     <n-card v-else size="small">

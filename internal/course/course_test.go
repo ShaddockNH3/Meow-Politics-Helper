@@ -105,6 +105,37 @@ func TestNormalizeQuestionListDedupAndType(t *testing.T) {
 	}
 }
 
+// 不定项：答案可能一个也可能多个，类型不能被改写成单选/多选。
+func TestNormalizeKeepsIndefiniteType(t *testing.T) {
+	questions, err := NormalizeQuestionList([]Question{
+		{
+			QuestionText:   "不定项多答案",
+			QuestionType:   "不定项",
+			Options:        map[string]string{"A": "1", "B": "2", "C": "3"},
+			CorrectAnswer:  "AC",
+			QuestionNumber: "1",
+		},
+		{
+			QuestionText:   "不定项单答案",
+			QuestionType:   "不定项选择题",
+			Options:        map[string]string{"A": "1", "B": "2"},
+			CorrectAnswer:  "B",
+			QuestionNumber: "2",
+		},
+	})
+	if err != nil {
+		t.Fatalf("NormalizeQuestionList 失败: %v", err)
+	}
+	if len(questions) != 2 {
+		t.Fatalf("应有 2 题，实际 %d", len(questions))
+	}
+	for _, q := range questions {
+		if q.QuestionType != "不定项" {
+			t.Fatalf("不定项类型被改写成了 %q（题目：%s）", q.QuestionType, q.QuestionText)
+		}
+	}
+}
+
 func TestSanitizeKey(t *testing.T) {
 	if got := SanitizeKey("My Bank!"); !strings.HasPrefix(got, "custom_") || strings.Contains(got, " ") {
 		t.Fatalf("SanitizeKey 结果不合法: %s", got)

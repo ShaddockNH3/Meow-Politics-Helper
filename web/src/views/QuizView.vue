@@ -7,6 +7,7 @@ import {
   currentQuestion,
   finish,
   isLastQuestion,
+  isMultiChoice,
   nextQuestion,
   pickOption,
   prevQuestion,
@@ -24,7 +25,7 @@ const dialog = useDialog()
 
 const question = computed(() => currentQuestion.value)
 const isQuick = computed(() => state.mode === 'quickReview')
-const isMulti = computed(() => question.value?.question_type === '多选题')
+const isMulti = computed(() => isMultiChoice(question.value?.question_type))
 const showAnswer = computed(() => isQuick.value || state.revealed)
 const correctKeys = computed(() =>
   String(question.value?.correct_answer || '')
@@ -263,7 +264,7 @@ onBeforeUnmount(() => {
 
       <aside class="quiz-side">
         <n-card size="small" style="margin-bottom: 12px">
-          <div class="side-stat"><span>本次进度</span><span>{{ progressPercent }}%</span></div>
+          <n-statistic label="本次进度" :value="progressPercent + '%'" />
           <n-progress
             type="line"
             :percentage="progressPercent"
@@ -271,12 +272,16 @@ onBeforeUnmount(() => {
             :height="6"
             color="#1f3f66"
             rail-color="#e9edf4"
+            style="margin-top: 6px"
           />
-          <div class="side-value">{{ state.results.answered }}<span class="side-unit"> 题已答</span></div>
-          <div class="side-stat">
-            <span>正确率</span>
-            <span>{{ state.results.answered ? accuracy + '%' : '—' }}</span>
-          </div>
+          <n-grid :cols="2" :x-gap="8" style="margin-top: 14px">
+            <n-gi>
+              <n-statistic label="已作答" :value="state.results.answered" />
+            </n-gi>
+            <n-gi>
+              <n-statistic label="正确率" :value="state.results.answered ? accuracy + '%' : '—'" />
+            </n-gi>
+          </n-grid>
         </n-card>
 
         <n-card size="small">
@@ -292,18 +297,20 @@ onBeforeUnmount(() => {
             />
             <n-button size="small" type="primary" ghost @click="doJump">去</n-button>
           </n-input-group>
-          <div class="jump-grid">
-            <button
-              v-for="(item, index) in state.questions"
-              :key="item.quiz_question_id"
-              class="jump-dot"
-              :class="{ current: index === state.index, done: index < state.index }"
-              :title="`第 ${index + 1} 题`"
-              @click="jumpToIndex(index)"
-            >
-              {{ index + 1 }}
-            </button>
-          </div>
+          <n-grid :cols="8" :x-gap="4" :y-gap="4" style="margin-top: 10px; max-height: 224px; overflow: auto">
+            <n-gi v-for="(item, index) in state.questions" :key="item.quiz_question_id">
+              <n-button
+                size="tiny"
+                block
+                :type="index === state.index ? 'primary' : index < state.index ? 'info' : 'default'"
+                :ghost="index !== state.index"
+                :title="`第 ${index + 1} 题`"
+                @click="jumpToIndex(index)"
+              >
+                {{ index + 1 }}
+              </n-button>
+            </n-gi>
+          </n-grid>
         </n-card>
       </aside>
     </div>
@@ -340,43 +347,6 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   margin-top: 6px;
-}
-
-.side-unit {
-  font-size: 12px;
-  color: var(--faint);
-  font-weight: 400;
-}
-
-.jump-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(22px, 1fr));
-  gap: 3px;
-  margin-top: 10px;
-  max-height: 224px;
-  overflow: auto;
-}
-
-.jump-dot {
-  border: 1px solid var(--border);
-  background: #fff;
-  border-radius: 4px;
-  font-size: 11px;
-  color: var(--faint);
-  padding: 3px 0;
-  cursor: pointer;
-}
-
-.jump-dot.done {
-  background: var(--primary-soft);
-  border-color: #c8d5e6;
-  color: var(--primary);
-}
-
-.jump-dot.current {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
 }
 
 @media (max-width: 768px) {

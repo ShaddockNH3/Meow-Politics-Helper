@@ -9,11 +9,11 @@ import {
   startMode,
   state,
   toggleAutoDelete,
-  toggleChapter,
 } from '../stores/app'
 
 const message = useMessage()
 const course = computed(() => currentCourse.value)
+const gridBreakpoints = { xs: 0, s: 481, m: 769, l: 1025, xl: 1281, '2xl': 1537 }
 const allSelected = computed(
   () => chapters.value.length > 0 && state.selectedChapters.length === chapters.value.length,
 )
@@ -51,17 +51,20 @@ async function start() {
             {{ allSelected ? '取消全选' : '全选' }}
           </n-button>
         </div>
-        <div class="chapter-grid">
-          <button
-            v-for="chapter in chapters"
-            :key="chapter.key"
-            class="chapter-chip"
-            :class="{ active: state.selectedChapters.includes(chapter.key) }"
-            @click="toggleChapter(chapter.key)"
+        <n-checkbox-group v-model:value="state.selectedChapters">
+          <n-grid
+            :cols="'2 s:3 m:4'"
+            :breakpoints="gridBreakpoints"
+            :x-gap="8"
+            :y-gap="8"
+            responsive="screen"
+            item-responsive
           >
-            {{ chapter.name }}
-          </button>
-        </div>
+            <n-gi v-for="chapter in chapters" :key="chapter.key">
+              <n-checkbox :value="chapter.key" :label="chapter.name" />
+            </n-gi>
+          </n-grid>
+        </n-checkbox-group>
       </div>
 
       <div v-else>

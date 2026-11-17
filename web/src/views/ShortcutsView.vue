@@ -61,34 +61,40 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   <div>
     <n-card size="small" style="margin-bottom: 12px">
       <div class="sc-title">选项键</div>
-      <div class="sc-grid">
-        <div
-          v-for="key in optionKeys"
-          :key="key"
-          class="kbd-cell"
-          :class="{ capturing: isCapturing('option', key) }"
-          @click="startCapture('option', key)"
-        >
-          <span>{{ key }} 选项</span>
-          <span class="kbd-value">{{ shortcuts.options[key] }}</span>
-        </div>
-      </div>
+      <n-grid :cols="'2 s:3'" :x-gap="8" :y-gap="8">
+        <n-gi v-for="key in optionKeys" :key="key">
+          <n-button
+            block
+            :secondary="isCapturing('option', key)"
+            :type="isCapturing('option', key) ? 'primary' : 'default'"
+            @click="startCapture('option', key)"
+          >
+            <n-space justify="space-between" align="center" style="width: 100%">
+              <span>{{ key }} 选项</span>
+              <n-text code>{{ shortcuts.options[key] }}</n-text>
+            </n-space>
+          </n-button>
+        </n-gi>
+      </n-grid>
     </n-card>
 
     <n-card size="small" style="margin-bottom: 12px">
       <div class="sc-title">导航键</div>
-      <div class="sc-grid">
-        <div
-          v-for="item in navItems"
-          :key="item.key"
-          class="kbd-cell"
-          :class="{ capturing: isCapturing('action', item.key) }"
-          @click="startCapture('action', item.key)"
-        >
-          <span>{{ item.label }}</span>
-          <span class="kbd-value">{{ shortcuts[item.key] }}</span>
-        </div>
-      </div>
+      <n-grid :cols="'1 s:2'" :x-gap="8" :y-gap="8">
+        <n-gi v-for="item in navItems" :key="item.key">
+          <n-button
+            block
+            :secondary="isCapturing('action', item.key)"
+            :type="isCapturing('action', item.key) ? 'primary' : 'default'"
+            @click="startCapture('action', item.key)"
+          >
+            <n-space justify="space-between" align="center" style="width: 100%">
+              <span>{{ item.label }}</span>
+              <n-text code>{{ shortcuts[item.key] }}</n-text>
+            </n-space>
+          </n-button>
+        </n-gi>
+      </n-grid>
       <p class="empty-hint" style="margin: 10px 0 0">
         {{ capturing ? '正在等待按键…按下想绑定的键' : '点一个格子，然后按下想要的键。' }}
       </p>
@@ -107,11 +113,5 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
   font-weight: 500;
   color: var(--text);
   margin-bottom: 10px;
-}
-
-.sc-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
 }
 </style>
