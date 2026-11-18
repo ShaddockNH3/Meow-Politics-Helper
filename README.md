@@ -1,6 +1,6 @@
 # 喵喵学习小助手
 
-原一个基于 Go 的本地刷题工具，专为福州大学政治选择题设计，默认支持毛概和习概两门课程的选择题练习，同时支持自定义题库等功能。
+一个基于 Go 的本地刷题工具，专为福州大学政治选择题设计，默认支持毛概和习概两门课程的选择题练习，同时支持自定义题库等功能。
 
 ## ✨ 特性
 
@@ -28,54 +28,125 @@
 
 手机（390px）：单列布局，操作按钮贴底。
 
-<img src="docs/screenshots/mobile.png" width="300" alt="手机端界面" />
+![手机端界面](docs/screenshots/mobile.png)
 
 自定义题库编辑器：
 
 ![题库编辑器](docs/screenshots/editor.png)
 
+## 快速开始
+
+### 先选对文件
+
+| 你的电脑                   | 下载这个                                     |
+| ---------------------- | ---------------------------------------- |
+| Windows（绝大多数）          | `Meow-Politics-Helper-windows-amd64.exe` |
+| Windows ARM（骁龙本）       | `Meow-Politics-Helper-windows-arm64.exe` |
+| macOS（Apple 芯片 M1 及以后） | `Meow-Politics-Helper-darwin-arm64.zip`  |
+| macOS（Intel 芯片）        | `Meow-Politics-Helper-darwin-amd64.zip`  |
+| Linux（x86_64）          | `Meow-Politics-Helper-linux-amd64.zip`   |
+| Linux（ARM64 / 树莓派）     | `Meow-Politics-Helper-linux-arm64.zip`   |
+
+不确定自己是哪种架构：
+
+- macOS：苹果菜单 → 关于本机 → 看「芯片」，Apple M 开头选 arm64，Intel 选 amd64
+- Windows：设置 → 系统 → 关于 → 看「系统类型」，x64 选 amd64，ARM 选 arm64
+- Linux：终端执行 `uname -m`，`x86_64` 选 amd64，`aarch64` 选 arm64
+
+### Windows
+
+1. 下载 `Meow-Politics-Helper-windows-amd64.exe`，放到桌面或任意文件夹
+2. 双击运行
+3. 首次运行如果弹出「Windows 已保护你的电脑」，点「更多信息」→「仍要运行」
+4. 浏览器会自动打开 `http://localhost:8899`，没打开就手动访问
+5. 关闭命令行窗口即退出程序
+
+> 不要放在 `C:\Program Files` 这类需要管理员权限的目录，程序要在同目录创建 `user_data/`。
+
+### macOS
+
+1. 下载 zip，双击解压
+2. 打开「终端」，进入解压目录并运行：
+
+   ```bash
+   cd ~/Downloads
+   chmod +x Meow-Politics-Helper-darwin-arm64
+   xattr -d com.apple.quarantine Meow-Politics-Helper-darwin-arm64
+   ./Meow-Politics-Helper-darwin-arm64
+   ```
+
+3. 浏览器自动打开；`Ctrl+C` 或关闭终端窗口即退出
+
+如果解压后双击提示「无法打开」，也可以去「系统设置 → 隐私与安全性」，在底部点「仍要打开」。
+
+### Linux
+
+```bash
+unzip Meow-Politics-Helper-linux-amd64.zip
+chmod +x Meow-Politics-Helper-linux-amd64
+./Meow-Politics-Helper-linux-amd64
+```
+
+- 工作目录要放在有写权限的位置，程序会在同目录创建 `user_data/`
+
+#### 用 tmux 托管（推荐）
+
+如果不使用托管工具进行管理，断掉 ssh 终端后服务便会停止。
+
+```bash
+sudo apt install tmux      # Debian / Ubuntu
+sudo dnf install tmux      # Fedora
+sudo pacman -S tmux        # Arch
+```
+
+然后在 tmux 里启动程序：
+
+```bash
+tmux new -s quiz                    # 新建名为 quiz 的会话
+./Meow-Politics-Helper-linux-amd64  # 在会话里运行
+```
+
+程序跑起来后，按 `Ctrl+B` 松开，再按 \`D\`，程序继续在后台运行，人可以放心断开 SSH。
+
+下次回来：
+
+```bash
+tmux ls                  # 看有哪些会话在跑
+tmux attach -t quiz      # 接回名为 quiz 的会话
+```
+
+用完想彻底关掉（会话里 `Ctrl+C` 停程序再 `exit` 也行）：
+
+```bash
+tmux kill-session -t quiz
+```
+
+服务器上部署的话，浏览器访问 `http://服务器IP:8899` 即可（`localhost` 只在服务器本机有效）。  
+打不开先检查防火墙和云服务商安全组有没有放行 8899 端口。
+
+### 第一次打开
+
+1. 输入用户 ID（字母、数字、下划线，1–50 位），点「进入」
+2. 选课程 → 选学习模式 → 选章节 → 开始
+3. 数据保存在程序同目录的 `user_data/`，换电脑时把整个目录拷过去即可
+
+### 常见问题
+
+| 现象              | 处理                           |
+| --------------- | ---------------------------- |
+| 端口被占用           | 先退出已经开着的本程序，再重新启动            |
+| 浏览器没自动打开        | 手动访问 `http://localhost:8899` |
+| macOS 提示无法验证开发者 | 执行上面的 `xattr` 命令             |
+| 双击后被文本编辑器打开     | 缺执行权限，用终端 `chmod +x` 后再运行    |
+| 手机也想用           | 电脑保持运行，页面点「手机访问」拿局域网地址       |
+
 ## 题库说明
 
 - 毛概选择题：题库来源于 2025 上半学年康老师，包含 9 个章节的选择题
-- 习概选择题：题库来源于 2024 下半学年李老师的题库，合计 101 道选择题，
-  并新增来自 2025 下半学年杨老师的题目，合计 269 道选择题；
+- 习概选择题：题库来源于 2024 下半学年李老师的题库，合计 101 道选择题，  
+  并新增来自 2025 下半学年杨老师的题目，合计 269 道选择题；  
   章节划分为导论加 17 个章节（共 18 章节），出题老师（仅列姓氏）包括林、王、阮、潘、杨、钱、罗、黄
 - 自定义
-
-## 主要功能
-
-- 内置题库：支持毛概、习概等课程题库。
-- 多种练习模式：速刷、答题、错题回顾。
-- 错题本：按课程 / 自定义题库分别记录，不会混在一起。
-- 多用户本地数据：每个用户的记录、错题、设置独立保存。
-- 快捷键：支持 A-E 选项、Enter、方向键、Esc，并可在设置中自定义。
-- 手机访问：电脑运行后，可在同一局域网内用手机浏览器访问练习。
-- 自定义题库：支持新建/编辑课程、章节、题目、选项和答案。
-- JSON 导入：可直接粘贴符合格式的 JSON 题库导入为自定义题库。
-
-## 快速开始
-
-从 [Releases](https://github.com/ShaddockNH3/Meow-Politics-Helper/releases) 下载对应平台的文件：
-
-- Windows：`Meow-Politics-Helper-windows-amd64.exe`（双击运行）
-- Windows ARM64：`Meow-Politics-Helper-windows-arm64.exe`
-- Linux：`Meow-Politics-Helper-linux-amd64.zip`
-- Linux ARM64：`Meow-Politics-Helper-linux-arm64.zip`
-- macOS Intel：`Meow-Politics-Helper-darwin-amd64.zip`
-- macOS Apple Silicon：`Meow-Politics-Helper-darwin-arm64.zip`
-
-Windows 用户双击 `.exe` 即可。macOS / Linux 用户解压 zip 后在终端运行：
-
-```bash
-chmod +x Meow-Politics-Helper-darwin-arm64
-./Meow-Politics-Helper-darwin-arm64
-```
-
-> macOS 首次运行如果提示「无法打开，因为无法验证开发者」，先执行
-> `xattr -d com.apple.quarantine Meow-Politics-Helper-darwin-arm64`
-> 再运行即可（本程序为开源本地工具，未购买 Apple 签名）。
-
-程序启动后会自动打开浏览器页面。
 
 ## 自定义题库
 
