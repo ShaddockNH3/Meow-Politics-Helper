@@ -106,7 +106,7 @@ tmux new -s quiz                    # 新建名为 quiz 的会话
 ./Meow-Politics-Helper-linux-amd64  # 在会话里运行
 ```
 
-程序跑起来后，按 `Ctrl+B` 松开，再按 \`D\`，程序继续在后台运行，人可以放心断开 SSH。
+程序跑起来后，按 `Ctrl+B` 松开，再按 `D`，程序继续在后台运行，人可以放心断开 SSH。
 
 下次回来：
 
