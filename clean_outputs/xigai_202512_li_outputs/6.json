@@ -1,0 +1,324 @@
+[
+    {
+        "question_number": "1",
+        "question_type": "单选题",
+        "question_text": "（  ）是新时代我国经济社会发展的鲜明主题，是全面建设社会主义现代化国家的首要任务。",
+        "options": {
+            "A": "高质量发展",
+            "B": "法治中国建设",
+            "C": "改革开放",
+            "D": "共同富裕"
+        },
+        "correct_answer": "A",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "2",
+        "question_type": "单选题",
+        "question_text": "（  ）是解决我国一切问题的基础和关键。",
+        "options": {
+            "A": "发展",
+            "B": "全面深化改革",
+            "C": "依法治国",
+            "D": "党的领导"
+        },
+        "correct_answer": "A",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "3",
+        "question_type": "单选题",
+        "question_text": "我国经济已由高速增长阶段转向（  ）。",
+        "options": {
+            "A": "快速发展阶段",
+            "B": "稳步发展阶段",
+            "C": "高水平发展阶段",
+            "D": "高质量发展阶段"
+        },
+        "correct_answer": "D",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "4",
+        "question_type": "单选题",
+        "question_text": "（  ）是新时代我国发展壮大的必由之路。",
+        "options": {
+            "A": "贯彻新发展理念",
+            "B": "供给侧结构性改革",
+            "C": "立足新发展阶段",
+            "D": "构建新发展格局"
+        },
+        "correct_answer": "A",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "5",
+        "question_type": "单选题",
+        "question_text": "（  ）是引领发展的第一动力。",
+        "options": {
+            "A": "改革",
+            "B": "发展",
+            "C": "创新",
+            "D": "稳定"
+        },
+        "correct_answer": "C",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "6",
+        "question_type": "单选题",
+        "question_text": "（  ）是非公有制经济的主要经济组织形式，是推进中国式现代化的生力军，是高质量发展的重要基础",
+        "options": {
+            "A": "混合所有制经济",
+            "B": "国营经济",
+            "C": "外资经济",
+            "D": "民营经济"
+        },
+        "correct_answer": "D",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "7",
+        "question_type": "单选题",
+        "question_text": "（  ）是党和国家治理经济的重要方式，体现了中国特色社会主义制度的独特优势。",
+        "options": {
+            "A": "市场",
+            "B": "宏观调控",
+            "C": "经济改革",
+            "D": "对外开放"
+        },
+        "correct_answer": "B",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "8",
+        "question_type": "单选题",
+        "question_text": "（  ）是把握未来发展主动权的先手棋，不是被迫之举和权宜之计。",
+        "options": {
+            "A": "立足新发展阶段",
+            "B": "贯彻新发展理念",
+            "C": "构建新发展格局",
+            "D": "实现新时代发展"
+        },
+        "correct_answer": "C",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "9",
+        "question_type": "单选题",
+        "question_text": "（  ）是我国发展的战略目标，是推动高质量发展、全面提高经济整体竞争力的必然要求。",
+        "options": {
+            "A": "坚持中国特色社会主义经济",
+            "B": "全面深化改革",
+            "C": "供给侧结构性改革",
+            "D": "建设现代化经济体系"
+        },
+        "correct_answer": "D",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "10",
+        "question_type": "单选题",
+        "question_text": "（  ）是社会主义现代化强国的根基。",
+        "options": {
+            "A": "数字经济",
+            "B": "实体经济",
+            "C": "农业强国",
+            "D": "现代化农业"
+        },
+        "correct_answer": "C",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "11",
+        "question_type": "单选题",
+        "question_text": "我国社会主义基本经济制度的完整表述是（ ）。",
+        "options": {
+            "A": "公有制为主体、多种所有制经济共同发展",
+            "B": "公有制为主体、多种所有制经济共同发展，按劳分配为主体、多种分配方式并存，社会主义市场经济体制等",
+            "C": "以按劳分配为主体、多种分配方式并存",
+            "D": "市场在资源配置中起决定性作用的经济制度"
+        },
+        "correct_answer": "B",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "12",
+        "question_type": "单选题",
+        "question_text": "构建新发展格局，要以（ ）为主体。",
+        "options": {
+            "A": "国内国际双循环",
+            "B": "国内大循环",
+            "C": "国际大循环",
+            "D": "区域小循环"
+        },
+        "correct_answer": "B",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "13",
+        "question_type": "单选题",
+        "question_text": "建设强大国内市场，必须坚持的战略基点是（ ）。",
+        "options": {
+            "A": "扩大出口",
+            "B": "新型城镇化",
+            "C": "扩大内需",
+            "D": "基础设施投资"
+        },
+        "correct_answer": "C",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "14",
+        "question_type": "单选题",
+        "question_text": "“构建新发展格局是以全国统一大市场基础上的国内大循环为主体，不能也不可能搞省内、市内、县内的‘小而全’循环。”这句话强调的是（ ）。",
+        "options": {
+            "A": "各省份应优先发展本地特色产业",
+            "B": "要加快建设全国统一大市场，打破市场分割",
+            "C": "县域经济不应参与国内大循环",
+            "D": "国内市场比国际市场更重要"
+        },
+        "correct_answer": "B",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "15",
+        "question_type": "单选题",
+        "question_text": "关于实体经济与新发展格局的关系，下列说法错误的是（ ）。",
+        "options": {
+            "A": "实体经济是一国经济的立身之本，是构筑未来发展战略优势的重要支撑",
+            "B": "坚持把发展经济的着力点放在实体经济上，加快建设现代化产业体系",
+            "C": "我国超大规模市场优势主要来自金融、房地产等虚拟经济部门",
+            "D": "制造业特别是高端制造业，是巩固壮大实体经济根基、畅通国内大循环的关键所在"
+        },
+        "correct_answer": "C",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "16",
+        "question_type": "单选题",
+        "question_text": "促进共同富裕，最艰巨最繁重的任务仍然在（   ）",
+        "options": {
+            "A": "西部",
+            "B": "农村",
+            "C": "城镇",
+            "D": "城市"
+        },
+        "correct_answer": "B",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "17",
+        "question_type": "多选题",
+        "question_text": "我国经济已由高速增长阶段转向高质量发展阶段，正处在(       )的攻关期。",
+        "options": {
+            "A": "转变发展方式",
+            "B": "优化经济结构",
+            "C": "转换增长动力",
+            "D": "构建经济体系"
+        },
+        "correct_answer": "ABC",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "18",
+        "question_type": "多选题",
+        "question_text": "非公有制经济包括（  ）以及混合所有制经济中的非国有成分和非集体成分。",
+        "options": {
+            "A": "个体经济",
+            "B": "私营经济",
+            "C": "港澳台投资经济",
+            "D": "外商投资经济"
+        },
+        "correct_answer": "ABCD",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "19",
+        "question_type": "多选题",
+        "question_text": "从我国生产力与生产关系的实际出发，我们确立了（  ）的分配制度，形成了我国的基本分配制度。",
+        "options": {
+            "A": "按劳分配为主体",
+            "B": "按需分配为主体",
+            "C": "多种分配方式并存",
+            "D": "多劳多得的分配方式并存"
+        },
+        "correct_answer": "AC",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "20",
+        "question_type": "多选题",
+        "question_text": "坚持和完善基本分配制度，要努力推动（  ）。",
+        "options": {
+            "A": "居民收入增长和经济增长同步",
+            "B": "居民收入增长和劳动生产率提高同步",
+            "C": "劳动报酬提高和经济增长同步",
+            "D": "劳动报酬提高和劳动生产率提高同步"
+        },
+        "correct_answer": "AD",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "21",
+        "question_type": "多选题",
+        "question_text": "构建高水平社会主义市场经济体制，关键是要处理好（  ）的关系。",
+        "options": {
+            "A": "改革",
+            "B": "发展",
+            "C": "政府",
+            "D": "市场"
+        },
+        "correct_answer": "CD",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "22",
+        "question_type": "多选题",
+        "question_text": "拉动经济增长的“三驾马车”分别指（    ）",
+        "options": {
+            "A": "消费",
+            "B": "投资",
+            "C": "内需",
+            "D": "出口"
+        },
+        "correct_answer": "ABD",
+        "error_count": 0,
+        "correct_count": 0
+    },
+    {
+        "question_number": "23",
+        "question_type": "多选题",
+        "question_text": "关于“以国内大循环为主体”，下列理解正确的有（ ）。",
+        "options": {
+            "A": "绝不是关起门来封闭运行",
+            "B": "意味着不再重视出口和利用外资",
+            "C": "要通过发挥内需潜力，使国内市场和国际市场更好联通",
+            "D": "以国内大循环吸引全球资源要素"
+        },
+        "correct_answer": "ACD",
+        "error_count": 0,
+        "correct_count": 0
+    }
+]
